@@ -12,7 +12,6 @@ import com.Questboard.backend.modules.auth.repository.RefreshTokenRepository;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
 import com.Questboard.backend.modules.auth.security.JwtUtil;
 
-import jakarta.transaction.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -20,6 +19,7 @@ import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
