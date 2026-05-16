@@ -12,7 +12,6 @@ import com.Questboard.backend.modules.auth.repository.RefreshTokenRepository;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
 import com.Questboard.backend.modules.auth.security.JwtUtil;
 
-
 import java.time.Instant;
 import java.util.Optional;
 
@@ -39,8 +38,7 @@ public class EmailPasswordAuthStrategy implements AuthStrategy {
             JwtUtil jwtUtil,
             PasswordEncoder passwordEncoder,
             RefreshTokenRepository refreshTokenRepository,
-            ApplicationEventPublisher eventPublisher
-        ) {
+            ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
@@ -126,7 +124,10 @@ public class EmailPasswordAuthStrategy implements AuthStrategy {
     private void saveRefreshToken(User user, String token) {
 
         refreshTokenRepository.findByUser(user)
-                .ifPresent(refreshTokenRepository::delete);
+                .ifPresent(existingToken -> {
+                    refreshTokenRepository.delete(existingToken);
+                    refreshTokenRepository.flush();
+                });
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
