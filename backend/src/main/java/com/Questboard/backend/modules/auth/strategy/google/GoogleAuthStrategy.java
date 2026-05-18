@@ -1,5 +1,6 @@
-package com.Questboard.backend.modules.auth.services.strategy;
+package com.Questboard.backend.modules.auth.strategy.google;
 
+import com.Questboard.backend.common.JwtUtil;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
@@ -7,7 +8,9 @@ import com.Questboard.backend.modules.auth.exception.AuthException;
 import com.Questboard.backend.modules.auth.model.AuthProvider;
 import com.Questboard.backend.modules.auth.model.User;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
-import com.Questboard.backend.modules.auth.security.JwtUtil;
+import com.Questboard.backend.modules.auth.services.TokenService;
+import com.Questboard.backend.modules.auth.strategy.BaseAuthStrategy;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -15,13 +18,12 @@ import org.springframework.util.StringUtils;
  * Authentication flow for Google OAuth.
  */
 @Component("GOOGLE")
-public class GoogleAuthStrategy implements AuthStrategy {
+public class GoogleAuthStrategy extends BaseAuthStrategy {
 
-    private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
-    public GoogleAuthStrategy(UserRepository userRepository, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
+    public GoogleAuthStrategy(UserRepository userRepository, JwtUtil jwtUtil, TokenService tokenService) {
+        super(tokenService, userRepository);
         this.jwtUtil = jwtUtil;
     }
 

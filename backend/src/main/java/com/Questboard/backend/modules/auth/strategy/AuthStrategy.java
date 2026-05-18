@@ -1,4 +1,4 @@
-package com.Questboard.backend.modules.auth.services.strategy;
+package com.Questboard.backend.modules.auth.strategy;
 
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;

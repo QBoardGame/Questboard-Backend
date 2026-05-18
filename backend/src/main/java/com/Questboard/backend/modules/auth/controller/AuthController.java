@@ -1,5 +1,6 @@
 package com.Questboard.backend.modules.auth.controller;
 
+import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RefreshTokenRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
@@ -10,6 +11,7 @@ import com.Questboard.backend.modules.auth.services.TokenService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,5 +51,13 @@ public class AuthController {
     @PostMapping("/refresh")
     public AuthResponse refreshToken(@RequestBody RefreshTokenRequest request) {
         return tokenService.refreshToken(request);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal JwtUserPrincipal principal) {
+
+        tokenService.logout(principal.getUserId());
+
+        return ResponseEntity.ok().build();
     }
 }

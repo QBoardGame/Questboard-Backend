@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.Questboard.backend.common.JwtUtil;
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 
 import java.io.IOException;

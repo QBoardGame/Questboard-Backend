@@ -1,18 +1,17 @@
-package com.Questboard.backend.modules.auth.services.strategy;
+package com.Questboard.backend.modules.auth.strategy.local;
 
+import com.Questboard.backend.modules.auth.dto.TokenPair;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.events.UserRegistrationEvent;
 import com.Questboard.backend.modules.auth.exception.AuthException;
 import com.Questboard.backend.modules.auth.model.AuthProvider;
-import com.Questboard.backend.modules.auth.model.RefreshToken;
 import com.Questboard.backend.modules.auth.model.User;
-import com.Questboard.backend.modules.auth.repository.RefreshTokenRepository;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
-import com.Questboard.backend.modules.auth.security.JwtUtil;
+import com.Questboard.backend.modules.auth.services.TokenService;
+import com.Questboard.backend.modules.auth.strategy.BaseAuthStrategy;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,24 +24,19 @@ import org.springframework.util.StringUtils;
  * Authentication flow for email / password credentials.
  */
 @Component("EMAIL")
-public class EmailPasswordAuthStrategy implements AuthStrategy {
+public class EmailPasswordAuthStrategy extends BaseAuthStrategy {
 
-    private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public EmailPasswordAuthStrategy(
             UserRepository userRepository,
-            JwtUtil jwtUtil,
             PasswordEncoder passwordEncoder,
-            RefreshTokenRepository refreshTokenRepository,
-            ApplicationEventPublisher eventPublisher) {
-        this.userRepository = userRepository;
-        this.jwtUtil = jwtUtil;
+            ApplicationEventPublisher eventPublisher,
+            TokenService tokenService) {
+
+        super(tokenService, userRepository);
         this.passwordEncoder = passwordEncoder;
-        this.refreshTokenRepository = refreshTokenRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -58,13 +52,8 @@ public class EmailPasswordAuthStrategy implements AuthStrategy {
             throw new AuthException("Invalid credentials for email authentication");
         }
 
-        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
-        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
-
-        saveRefreshToken(user, refreshToken);
-        return createResponse(user.getEmail(), user.getProvider().name(), accessToken, refreshToken);
+        TokenPair tokens = tokenService.createTokens(user);
+        return createResponse(user.getEmail(), user.getProvider().name(), tokens.accessToken(), tokens.refreshToken());
     }
 
     @Override
@@ -93,16 +82,12 @@ public class EmailPasswordAuthStrategy implements AuthStrategy {
                 .build();
 
         User savedUser = userRepository.save(user);
-        String accessToken = jwtUtil.generateToken(savedUser.getId(), 15, "access token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
-        String refreshToken = jwtUtil.generateToken(savedUser.getId(), 129600, "refresh token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
-        saveRefreshToken(savedUser, refreshToken);
+        TokenPair tokens = tokenService.createTokens(savedUser);
 
         eventPublisher.publishEvent(
                 new UserRegistrationEvent(savedUser));
 
-        return createResponse(savedUser.getEmail(), savedUser.getProvider().name(), accessToken, refreshToken);
+        return createResponse(savedUser.getEmail(), savedUser.getProvider().name(), tokens.accessToken(), tokens.refreshToken());
     }
 
     private void validateRequest(AuthRequest request) {
@@ -119,24 +104,6 @@ public class EmailPasswordAuthStrategy implements AuthStrategy {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
-    }
-
-    private void saveRefreshToken(User user, String token) {
-
-        refreshTokenRepository.findByUser(user)
-                .ifPresent(existingToken -> {
-                    refreshTokenRepository.delete(existingToken);
-                    refreshTokenRepository.flush();
-                });
-
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
-                .token(token)
-                .expiryDate(Instant.now().plusSeconds(60L * 60 * 24 * 90))
-                .revoked(false)
-                .build();
-
-        refreshTokenRepository.save(refreshToken);
     }
 
 }

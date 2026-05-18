@@ -1,5 +1,9 @@
 package com.Questboard.backend.modules.auth.services;
 
+import java.util.UUID;
+
+import org.springframework.security.core.Authentication;
+
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
@@ -12,4 +16,5 @@ public interface AuthService {
     AuthResponse authenticate(AuthRequest request);
 
     AuthResponse register(RegisterRequest request);
+
 }

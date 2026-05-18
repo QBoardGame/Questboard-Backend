@@ -6,6 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.Questboard.backend.common.JwtUtil;
+import com.Questboard.backend.modules.auth.dto.TokenPair;
 import com.Questboard.backend.modules.auth.dto.request.RefreshTokenRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.exception.AuthException;
@@ -13,7 +15,6 @@ import com.Questboard.backend.modules.auth.model.RefreshToken;
 import com.Questboard.backend.modules.auth.model.User;
 import com.Questboard.backend.modules.auth.repository.RefreshTokenRepository;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
-import com.Questboard.backend.modules.auth.security.JwtUtil;
 
 @Service
 public class TokenService {
@@ -65,15 +66,15 @@ public class TokenService {
                 15,
                 "access token",
                 user.getRole().name(),
-                user.getEmail(), 
+                user.getEmail(),
                 user.getProvider().name());
 
         String newRefreshToken = jwtUtil.generateToken(
                 user.getId(),
                 129600,
                 "refresh token",
-                user.getRole().name(), 
-                user.getEmail(), 
+                user.getRole().name(),
+                user.getEmail(),
                 user.getProvider().name());
 
         // 5. Rotate refresh token in DB
@@ -89,5 +90,47 @@ public class TokenService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
+    }
+
+    public TokenPair createTokens(User user) {
+
+        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(),
+                user.getEmail(), user.getProvider().name());
+        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(),
+                user.getEmail(), user.getProvider().name());
+
+        saveRefreshToken(user, refreshToken);
+
+        return new TokenPair(accessToken, refreshToken);
+    }
+
+    private void saveRefreshToken(User user, String token) {
+
+        refreshTokenRepository.findByUser(user)
+                .ifPresent(existingToken -> {
+                    refreshTokenRepository.delete(existingToken);
+                    refreshTokenRepository.flush();
+                });
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(token)
+                .expiryDate(Instant.now().plusSeconds(60L * 60 * 24 * 90))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    public void logout(UUID userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException("User not found"));
+
+        refreshTokenRepository.findByUser(user)
+                .ifPresent(token -> {
+                    token.setRevoked(true);
+                    refreshTokenRepository.save(token);
+                });
     }
 }

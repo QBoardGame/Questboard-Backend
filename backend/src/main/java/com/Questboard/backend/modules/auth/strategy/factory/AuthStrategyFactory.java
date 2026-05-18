@@ -1,8 +1,9 @@
-package com.Questboard.backend.modules.auth.services.factory;
+package com.Questboard.backend.modules.auth.strategy.factory;
 
 import com.Questboard.backend.modules.auth.dto.AuthType;
 import com.Questboard.backend.modules.auth.exception.AuthException;
-import com.Questboard.backend.modules.auth.services.strategy.AuthStrategy;
+import com.Questboard.backend.modules.auth.strategy.AuthStrategy;
+
 import java.util.Map;
 import org.springframework.stereotype.Component;
 

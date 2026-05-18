@@ -5,8 +5,9 @@ import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.exception.AuthException;
 import com.Questboard.backend.modules.auth.services.AuthService;
-import com.Questboard.backend.modules.auth.services.factory.AuthStrategyFactory;
-import com.Questboard.backend.modules.auth.services.strategy.AuthStrategy;
+import com.Questboard.backend.modules.auth.strategy.AuthStrategy;
+import com.Questboard.backend.modules.auth.strategy.factory.AuthStrategyFactory;
+
 import org.springframework.stereotype.Service;
 
 /**
