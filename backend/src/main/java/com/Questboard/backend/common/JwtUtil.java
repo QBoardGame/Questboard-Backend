@@ -101,11 +101,11 @@ public class JwtUtil {
     }
 
     public boolean isAccessToken(String token) {
-        return "access".equals(extractTokenType(token));
+        return "access token".equals(extractTokenType(token));
     }
 
     public boolean isRefreshToken(String token) {
-        return "refresh".equals(extractTokenType(token));
+        return "refresh token   ".equals(extractTokenType(token));
     }
 
     public boolean validateTokenType(String token, String expectedType) {
@@ -113,7 +113,7 @@ public class JwtUtil {
     }
 
     // private boolean isExpired(String token) {
-    //     return extractExpiration(token).before(new Date());
+    // return extractExpiration(token).before(new Date());
     // }
 
     public boolean willExpireSoon(String token, int thresholdMinutes) {

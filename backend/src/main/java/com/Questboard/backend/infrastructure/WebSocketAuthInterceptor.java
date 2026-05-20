@@ -13,14 +13,15 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import com.Questboard.backend.common.JwtUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
     private final JwtUtil jwtUtil;
 
-    public WebSocketAuthInterceptor(
-            JwtUtil jwtUtil) {
+    public WebSocketAuthInterceptor(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
@@ -31,55 +32,88 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes) throws Exception {
 
-        if (!(request instanceof ServletServerHttpRequest)) {
+        log.info("=== WebSocket Handshake Started ===");
+
+        if (!(request instanceof ServletServerHttpRequest servletRequestWrapper)) {
+            log.warn("Request is not ServletServerHttpRequest");
             return true;
         }
 
-        HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
+        HttpServletRequest servletRequest = servletRequestWrapper.getServletRequest();
 
-        // ✅ Overwolf / desktop safe
+        log.info("Request URI: {}", servletRequest.getRequestURI());
+        log.info("Query String: {}", servletRequest.getQueryString());
+        log.info("Remote Addr: {}", servletRequest.getRemoteAddr());
+        log.info("Origin: {}", servletRequest.getHeader("Origin"));
+
         String accessToken = servletRequest.getParameter("access_token");
 
         if (accessToken == null || accessToken.isEmpty()) {
+            log.warn("No access token provided. Connecting as guest.");
+
             attributes.put("isGuest", true);
+
             return true;
         }
 
         try {
-            // -----------------------------
-            // BASIC TOKEN VALIDATION
-            // -----------------------------
 
-            if (!jwtUtil.isAccessToken(accessToken)) {
+            log.info("Access token received");
+
+            // -----------------------------
+            // TOKEN TYPE CHECK
+            // -----------------------------
+            boolean isAccessToken = jwtUtil.isAccessToken(accessToken);
+
+            log.info("isAccessToken: {}", isAccessToken);
+
+            if (!isAccessToken) {
+                log.error("Token is NOT an access token");
                 return false;
             }
 
-            if (!jwtUtil.isTokenValid(accessToken)) {
+            // -----------------------------
+            // TOKEN VALIDATION
+            // -----------------------------
+            boolean isValid = jwtUtil.isTokenValid(accessToken);
+
+            log.info("isTokenValid: {}", isValid);
+
+            if (!isValid) {
+                log.error("Token validation failed");
                 return false;
             }
 
+            // -----------------------------
+            // EXTRACT USER DETAILS
+            // -----------------------------
             String userIdStr = jwtUtil.extractUserId(accessToken);
             String email = jwtUtil.extractEmail(accessToken);
             String role = jwtUtil.extractRole(accessToken);
 
+            log.info("Extracted userId: {}", userIdStr);
+            log.info("Extracted email: {}", email);
+            log.info("Extracted role: {}", role);
+
             UUID userId = UUID.fromString(userIdStr);
 
-            // Load user (ensures user still exists / not deleted / not disabled)
-            // JwtUserPrincipal principal = new JwtUserPrincipal(userId, email, role);
             // -----------------------------
-            // ATTACH CONTEXT TO SOCKET
+            // ATTACH CONTEXT
             // -----------------------------
-
             attributes.put("userId", userId);
             attributes.put("email", email);
             attributes.put("role", role);
             attributes.put("access_token", accessToken);
             attributes.put("isGuest", false);
 
+            log.info("WebSocket authentication successful for user: {}", email);
+
             return true;
 
         } catch (Exception e) {
-            // attributes.put("isGuest", true);
+
+            log.error("WebSocket authentication failed", e);
+
             return false;
         }
     }
@@ -90,6 +124,11 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             ServerHttpResponse response,
             WebSocketHandler wsHandler,
             Exception exception) {
-        // no-op
+
+        if (exception != null) {
+            log.error("After handshake exception", exception);
+        } else {
+            log.info("WebSocket handshake completed");
+        }
     }
 }
