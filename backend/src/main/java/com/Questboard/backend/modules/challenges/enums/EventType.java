@@ -6,5 +6,6 @@ public enum EventType {
     PLAYTIME,
     ASSIST,
     DAMAGE,
-    MATCH_PLAYED
+    MATCH_PLAYED,
+    DEATH
 }
