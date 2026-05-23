@@ -78,7 +78,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HearthstoneChallengeStrategy implements ChallengeStrategy {
 
-    private static final Long HEARTHSTONE_GAME_ID = 2L;
+    private static final Long HEARTHSTONE_GAME_ID = 9898L;
 
     private final UserChallengeProgressRepository progressRepository;
     private final ChallengeDefinitionRepository challengeDefinitionRepository;
