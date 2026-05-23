@@ -1,12 +1,8 @@
-// package com.Questboard.backend.modules.challenges.repository;
-
-// public class UserChallengeProgressRepository {
-
-// }
-
 package com.Questboard.backend.modules.challenges.repository;
 
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
+import com.Questboard.backend.modules.challenges.enums.EventType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -64,5 +60,48 @@ public interface UserChallengeProgressRepository
                 WHERE u.completed = false
             """)
     List<UserChallengeProgress> findActiveProgress();
+
+    List<UserChallengeProgress> findByUserIdAndEventTypeAndCompletedFalse(
+            UUID userId,
+            EventType eventType);
+
+    boolean existsByUserIdAndChallengeId(
+            UUID userId,
+            UUID challengeId);
+
+    UserChallengeProgress findByUserIdAndChallengeIdAndGameIdAndCompleted(UUID userId, UUID challengeId, Long gameId,
+            boolean isActive);
+
+    @Query("""
+            UPDATE UserChallengeProgress u
+            SET u.rewardProcessing = true
+            WHERE u.id = :id
+            AND u.completed = true
+            AND u.claimed = false
+            AND u.rewardProcessing = false
+            AND (u.expiresAt IS NULL OR u.expiresAt > CURRENT_TIMESTAMP)
+            """)
+    int lockForRewardProcessing(UUID id);
+
+    @Modifying
+    @Query("""
+            UPDATE UserChallengeProgress p
+            SET p.rewardProcessing = true
+            WHERE p.id = :id
+            AND p.rewardProcessing = false
+            AND p.completed = true
+            AND p.claimed = false
+            """)
+    int lockForReward(UUID id);
+
+    @Modifying
+    @Query("""
+            UPDATE UserChallengeProgress p
+            SET p.claimed = true
+            WHERE p.id = :id
+            AND p.claimed = false
+            """)
+    int markClaimed(UUID id);
+
 
 }

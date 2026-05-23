@@ -4,5 +4,6 @@ public enum CreatorType {
     SYSTEM,
     STREAMER,
     BRAND,
-    ADMIN
+    ADMIN,
+    USER
 }

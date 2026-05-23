@@ -1,7 +1,10 @@
 package com.Questboard.backend.modules.challenges.service.impl;
 
+import com.Questboard.backend.modules.challenges.dto.CurrentProgressDto;
 import com.Questboard.backend.modules.challenges.dto.GameEventDto;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.entity.GameEvent;
+import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
 import com.Questboard.backend.modules.challenges.repository.GameEventRepository;
 import com.Questboard.backend.modules.challenges.service.GameEventService;
 import com.Questboard.backend.modules.challenges.strategy.ChallengeStrategyFactory;
@@ -24,10 +27,10 @@ public class GameEventServiceImpl implements GameEventService {
 
     @Override
     @Transactional
-    public UUID submitEvent(GameEventDto dto) {
+    public UUID submitEvent(GameEventDto dto, UUID userId) {
         GameEvent e = GameEvent.builder()
                 .id(UUID.randomUUID())
-                .userId(dto.getUserId())
+                .userId(userId)
                 .gameId(dto.getGameId())
                 .eventType(dto.getEventType())
                 .value(dto.getValue())
@@ -39,8 +42,13 @@ public class GameEventServiceImpl implements GameEventService {
 
         // delegate to strategy
         // strategyFactory.resolve(dto.getGameId()).process(e);
-        strategyFactory.getStrategy(dto.getGameId()).process(dto);
+        strategyFactory.getStrategy(dto.getGameId()).process(dto, userId);
 
         return e.getId();
+    }
+
+    @Override
+    public UserChallengeProgress getCurrentProgress(CurrentProgressDto request, UUID userId){
+        return strategyFactory.getStrategy(request.getGameId()).extractProgress(request, userId);
     }
 }

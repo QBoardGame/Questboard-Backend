@@ -90,6 +90,7 @@
 
 package com.Questboard.backend.modules.challenges.service.impl;
 
+import com.Questboard.backend.modules.challenges.dto.ChallengeCompletedEvent;
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
@@ -99,76 +100,184 @@ import com.Questboard.backend.modules.challenges.repository.UserChallengeProgres
 import com.Questboard.backend.modules.challenges.service.ChallengeService;
 import com.Questboard.backend.modules.challenges.strategy.ChallengeStrategy;
 import com.Questboard.backend.modules.challenges.strategy.ChallengeStrategyFactory;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChallengeServiceImpl implements ChallengeService {
 
-    private final ChallengeDefinitionRepository challengeRepository;
+        private final ChallengeDefinitionRepository challengeRepository;
 
-    private final UserChallengeProgressRepository progressRepository;
+        private final UserChallengeProgressRepository progressRepository;
 
-    private final ChallengeStrategyFactory strategyFactory;
+        private final ChallengeStrategyFactory strategyFactory;
+        private final ApplicationEventPublisher eventPublisher;
 
-    @Override
-    public List<ChallengeWithProgressDto> getActiveChallenges(
-            Long gameId,
-            UUID userId) {
+        @Override
+        public List<ChallengeWithProgressDto> getActiveChallenges(
+                        Long gameId,
+                        UUID userId) {
 
-        ChallengeStrategy strategy = strategyFactory.getStrategy(gameId);
+                ChallengeStrategy strategy = strategyFactory.getStrategy(gameId);
 
-        List<ChallengeDefinition> challenges = strategy.getActiveChallenges(gameId);
+                List<ChallengeDefinition> challenges = strategy.getActiveChallenges(gameId);
 
-        return challenges.stream()
-                .map(challenge -> buildChallengeWithProgress(challenge, userId))
-                .toList();
-    }
-
-    @Override
-    public void claimReward(
-            UUID userId,
-            UUID challengeId) {
-
-        UserChallengeProgress progress = progressRepository
-                .findByUserIdAndChallengeId(
-                        userId,
-                        challengeId)
-                .orElseThrow();
-
-        if (!progress.isCompleted()) {
-            throw new RuntimeException(
-                    "Challenge not completed");
+                return challenges.stream()
+                                .map(challenge -> buildChallengeWithProgress(challenge, userId))
+                                .toList();
         }
 
-        if (progress.isClaimed()) {
-            throw new RuntimeException(
-                    "Reward already claimed");
+        @Override
+        public void claimReward(
+                        UUID userId,
+                        UUID challengeId) {
+
+                UserChallengeProgress progress = progressRepository
+                                .findByUserIdAndChallengeId(
+                                                userId,
+                                                challengeId)
+                                .orElseThrow();
+
+                if (!progress.isCompleted()) {
+                        throw new RuntimeException(
+                                        "Challenge not completed");
+                }
+
+                if (progress.isClaimed()) {
+                        throw new RuntimeException(
+                                        "Reward already claimed");
+                }
+
+                progress.setClaimed(true);
+
+                progressRepository.save(progress);
         }
 
-        progress.setClaimed(true);
+        private ChallengeWithProgressDto buildChallengeWithProgress(
+                        ChallengeDefinition challenge,
+                        UUID userId) {
 
-        progressRepository.save(progress);
-    }
+                UserChallengeProgress progress = progressRepository
+                                .findByUserIdAndChallengeId(userId, challenge.getId())
+                                .orElse(null);
 
-    private ChallengeWithProgressDto buildChallengeWithProgress(
-            ChallengeDefinition challenge,
-            UUID userId) {
+                return ChallengeWithProgressDto.builder()
+                                .challenge(ChallengeMapper.toDto(challenge))
+                                .progress(
+                                                progress != null
+                                                                ? ChallengeMapper.toDto(progress)
+                                                                : null)
+                                .build();
+        }
 
-        UserChallengeProgress progress = progressRepository
-                .findByUserIdAndChallengeId(userId, challenge.getId())
-                .orElse(null);
+        // @Transactional
+        // public void updateProgressAndMaybePublishEvent(
+        // UserChallengeProgress progress,
+        // ChallengeDefinition challenge,
+        // Long incrementValue) {
 
-        return ChallengeWithProgressDto.builder()
-                .challenge(ChallengeMapper.toDto(challenge))
-                .progress(
-                        progress != null
-                                ? ChallengeMapper.toDto(progress)
-                                : null)
-                .build();
-    }
+        // long updatedProgress = progress.getProgress() + incrementValue;
+
+        // progress.setProgress(updatedProgress);
+
+        // boolean justCompleted = !progress.isCompleted()
+        // && updatedProgress >= challenge.getTargetValue()
+        // && !isExpired(progress);
+
+        // if (justCompleted) {
+
+        // progress.setCompleted(true);
+        // progress.setCompletedAt(Instant.now());
+
+        // progressRepository.save(progress);
+
+        // // 🔥 DOMAIN EVENT (ONLY ON FIRST COMPLETION)
+        // eventPublisher.publishEvent(
+        // new ChallengeCompletedEvent(
+        // progress.getUserId(),
+        // challenge.getId(),
+        // challenge.getGameId(),
+        // progress.getId(),
+        // challenge.getRewardValue()));
+
+        // return;
+        // }
+
+        // progressRepository.save(progress);
+        // }
+
+        public void updateProgressAndMaybePublishEvent(
+                        UserChallengeProgress progress,
+                        ChallengeDefinition challenge,
+                        Long incrementValue) {
+
+                log.info("➡️ Entered updateProgressAndMaybePublishEvent | userId={} | progressId={} | increment={}",
+                                progress.getUserId(),
+                                progress.getId(),
+                                incrementValue);
+
+                long updatedProgress = progress.getProgress() + incrementValue;
+
+                log.debug("Current progress={} | Updated progress={}",
+                                progress.getProgress(),
+                                updatedProgress);
+
+                progress.setProgress(updatedProgress);
+
+                boolean justCompleted = !progress.isCompleted()
+                                && updatedProgress >= challenge.getTargetValue()
+                                && !isExpired(progress);
+
+                log.debug("Completion check | justCompleted={} | target={} | expired={}",
+                                justCompleted,
+                                challenge.getTargetValue(),
+                                isExpired(progress));
+
+                if (justCompleted) {
+
+                        log.info("🎯 Challenge just completed | userId={} | challengeId={} | progressId={}",
+                                        progress.getUserId(),
+                                        challenge.getId(),
+                                        progress.getId());
+
+                        progress.setCompleted(true);
+                        progress.setCompletedAt(Instant.now());
+
+                        progressRepository.save(progress);
+
+                        log.info("💾 Progress saved as completed");
+
+                        eventPublisher.publishEvent(
+                                        new ChallengeCompletedEvent(
+                                                        progress.getUserId(),
+                                                        challenge.getId(),
+                                                        challenge.getGameId(),
+                                                        progress.getId(),
+                                                        challenge.getRewardValue()));
+
+                        log.info("📣 ChallengeCompletedEvent published");
+
+                        return;
+                }
+
+                progressRepository.save(progress);
+
+                log.info("💾 Progress saved (not completed) | progress={}", updatedProgress);
+        }
+
+        private boolean isExpired(UserChallengeProgress progress) {
+                return progress.getExpiresAt() != null
+                                && Instant.now().isAfter(progress.getExpiresAt());
+        }
 }

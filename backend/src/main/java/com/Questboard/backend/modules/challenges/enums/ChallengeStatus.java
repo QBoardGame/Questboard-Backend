@@ -6,5 +6,6 @@ public enum ChallengeStatus {
     SCHEDULED,
     ACTIVE,
     ENDED,
-    REJECTED
+    REJECTED,
+    INACTIVE
 }

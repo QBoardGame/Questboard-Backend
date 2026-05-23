@@ -37,7 +37,7 @@
 //     @Override
 //     @Transactional
 //     public void process(GameEvent event) {
-//         List<UserChallenge> list = userChallengeRepository.findByUserIdAndCompletedFalse(event.getUserId());
+//         List<UserChallenge> list = userChallengeRepository.findByUserIdAndCompletedFalse(userId);
 //         for (UserChallenge uc : list) {
 //             if (uc.isCompleted()) continue;
 //             Integer newProgress = uc.getProgress() + (event.getValue() == null ? 1 : event.getValue());
@@ -58,7 +58,9 @@ package com.Questboard.backend.modules.challenges.strategy.impl;
 
 import com.Questboard.backend.modules.challenges.entity.GameEvent;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
+import com.Questboard.backend.modules.challenges.dto.CurrentProgressDto;
 import com.Questboard.backend.modules.challenges.dto.GameEventDto;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
 import com.Questboard.backend.modules.challenges.enums.RewardType;
 import com.Questboard.backend.modules.challenges.repository.ChallengeDefinitionRepository;
@@ -72,6 +74,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -109,13 +112,13 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
     // -----------------------------
     @Override
     @Transactional
-    public void process(GameEventDto event) {
+    public void process(GameEventDto event, UUID userId) {
 
-        if (event == null || event.getUserId() == null) {
+        if (event == null || userId == null) {
             return;
         }
 
-        long eventValue = extractValue(event);
+        long eventValue = event.getValue() != null ? event.getValue() : 0L;
 
         // 1. Fetch only relevant active challenges
         List<ChallengeDefinition> challenges = challengeDefinitionRepository.findActiveByEventType(
@@ -135,9 +138,9 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
                 // 2.1 Get or create progress
                 UserChallengeProgress progress = progressRepository
                         .findByUserIdAndChallengeId(
-                                event.getUserId(),
+                                userId,
                                 challenge.getId())
-                        .orElseGet(() -> createProgress(event, challenge));
+                        .orElseGet(() -> createProgress(event, challenge, userId));
 
                 if (progress.isCompleted()) {
                     continue;
@@ -156,14 +159,14 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
                     // 2.4 Reward (ONLY ONCE)
                     if (!progress.isClaimed()) {
                         rewardService.grantReward(
-                                event.getUserId(),
+                                userId,
                                 RewardType.valueOf(challenge.getRewardType().name()),
                                 String.valueOf(challenge.getRewardValue()),
                                 challenge.getId());
                     }
 
                     log.info("User {} completed Hearthstone challenge {}",
-                            event.getUserId(),
+                            userId,
                             challenge.getId());
                 }
 
@@ -172,7 +175,7 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
             } catch (Exception e) {
                 log.error("Error processing challenge {} for user {}",
                         challenge.getId(),
-                        event.getUserId(),
+                        userId,
                         e);
             }
         }
@@ -189,12 +192,12 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
     // PROGRESS CREATION
     // -----------------------------
     private UserChallengeProgress createProgress(GameEventDto event,
-            ChallengeDefinition challenge) {
+            ChallengeDefinition challenge, UUID userId) {
 
         return progressRepository.save(
                 UserChallengeProgress.builder()
                         .id(java.util.UUID.randomUUID())
-                        .userId(event.getUserId())
+                        .userId(userId)
                         .challengeId(challenge.getId())
                         .progress(0L)
                         .targetValue(challenge.getTargetValue())
@@ -204,13 +207,12 @@ public class HearthstoneChallengeStrategy implements ChallengeStrategy {
     }
 
     @Override
-    public long extractProgress(GameEventDto event) {
+    public UserChallengeProgress extractProgress(CurrentProgressDto request, UUID userId) {
 
-        if (event.getValue() != null) {
-            return event.getValue();
-        }
-
-        return 2L;
+        // return event.getValue() != null ? event.getValue() : 0L;
+        UUID challengeId = request.getChallengeId();
+        Long gameId = request.getGameId();
+        return progressRepository.findByUserIdAndChallengeIdAndGameIdAndCompleted(userId, challengeId, gameId, true);
     }
 
     @Override

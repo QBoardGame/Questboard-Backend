@@ -7,8 +7,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.Questboard.backend.modules.auth.events.UserRegistrationEvent;
-import com.Questboard.backend.modules.wallet.WalletRepository;
 import com.Questboard.backend.modules.wallet.models.Wallet;
+import com.Questboard.backend.modules.wallet.repository.WalletRepository;
 
 import lombok.extern.slf4j.Slf4j;
 

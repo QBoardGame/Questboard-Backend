@@ -13,61 +13,9 @@ import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
-// @Entity
-// @Table(name = "challenge_definition", indexes = {
-//         @Index(name = "idx_challenge_game", columnList = "game_id"),
-//         @Index(name = "idx_challenge_type", columnList = "challenge_type")
-// })
-// @Getter
-// @Setter
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class ChallengeDefinition {
-//     @Id
-//     @Column(name = "id", nullable = false)
-//     private UUID id;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-//     @Column(name = "game_id", nullable = false)
-//     private Long gameId;
-
-//     @Column(name = "title", nullable = false)
-//     private String title;
-
-//     @Column(name = "description", columnDefinition = "text")
-//     private String description;
-
-//     @Enumerated(EnumType.STRING)
-//     @Column(name = "challenge_type", nullable = false)
-//     private ChallengeType challengeType;
-
-//     @Enumerated(EnumType.STRING)
-//     @Column(name = "event_type", nullable = false)
-//     private EventType eventType;
-
-//     @Column(name = "target_value", nullable = false)
-//     private Long targetValue;
-
-//     @Column(name = "reward_amount", nullable = false)
-//     private Long rewardAmount;
-
-//     @Column(name = "rarity_weight")
-//     private Integer rarityWeight;
-
-//     @Column(name = "active")
-//     private boolean active;
-
-//     @Column(name = "created_at")
-//     private Instant createdAt;
-
-//     @Column(name = "updated_at")
-//     private Instant updatedAt;
-
-//     @PrePersist
-//     protected void onCreate(){
-//         this.active = false;
-//     }
-// }
 
 @Entity
 @Table(name = "challenge_definition", indexes = {
@@ -140,6 +88,7 @@ public class ChallengeDefinition {
      * "weapon": "SNIPER"
      * }
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "conditions", columnDefinition = "jsonb")
     private String conditions;
 

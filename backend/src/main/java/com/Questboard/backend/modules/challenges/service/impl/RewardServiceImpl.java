@@ -3,6 +3,9 @@ package com.Questboard.backend.modules.challenges.service.impl;
 import com.Questboard.backend.modules.challenges.enums.RewardType;
 import com.Questboard.backend.modules.challenges.repository.UserChallengeProgressRepository;
 import com.Questboard.backend.modules.challenges.service.RewardService;
+import com.Questboard.backend.modules.wallet.enums.TransactionType;
+import com.Questboard.backend.modules.wallet.service.WalletService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import java.util.UUID;
 public class RewardServiceImpl implements RewardService {
 
     private final UserChallengeProgressRepository progressRepository;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -41,7 +45,7 @@ public class RewardServiceImpl implements RewardService {
         // 2. Apply reward based on type
         switch (rewardType) {
 
-            case COINS -> addCoins(userId, Long.parseLong(rewardValue));
+            case COINS -> addCoins(userId, Long.parseLong(rewardValue), challengeId);
 
             case XP -> addXp(userId, Long.parseLong(rewardValue));
 
@@ -64,8 +68,8 @@ public class RewardServiceImpl implements RewardService {
     // INTERNAL WALLET METHODS
     // -----------------------------
 
-    private void addCoins(UUID userId, long amount) {
-        // TODO integrate WalletService
+    private void addCoins(UUID userId, long amount, UUID challengeId) {
+        walletService.creditCoins(userId, amount, TransactionType.CHALLENGE_REWARD, challengeId, "User get this after completing challenge");
         log.info("Added {} coins to user {}", amount, userId);
     }
 

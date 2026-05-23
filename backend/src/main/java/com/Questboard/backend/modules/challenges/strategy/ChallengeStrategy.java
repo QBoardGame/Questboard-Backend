@@ -9,10 +9,14 @@
 
 package com.Questboard.backend.modules.challenges.strategy;
 
+import com.Questboard.backend.modules.challenges.dto.CurrentProgressDto;
 import com.Questboard.backend.modules.challenges.dto.GameEventDto;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
+import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface ChallengeStrategy {
 
@@ -25,9 +29,10 @@ public interface ChallengeStrategy {
             ChallengeDefinition challenge,
             GameEventDto event);
 
-    long extractProgress(
-            GameEventDto event);
+    UserChallengeProgress extractProgress(
+        CurrentProgressDto request,
+            UUID userId);
 
-    void process(GameEventDto dto);
+    void process(GameEventDto dto, UUID userId);
 
 }

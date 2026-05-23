@@ -1,5 +1,6 @@
 package com.Questboard.backend.modules.challenges.repository;
 
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.entity.UserChallenge;
 import com.Questboard.backend.modules.challenges.enums.EventType;
 import org.springframework.data.domain.Page;
@@ -27,4 +28,6 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, UU
                                                       @Param("gameId") Long gameId,
                                                       @Param("eventType") EventType eventType,
                                                       @Param("now") Instant now);
+
+    
 }

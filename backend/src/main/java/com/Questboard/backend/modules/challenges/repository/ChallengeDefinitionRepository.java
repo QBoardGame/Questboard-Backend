@@ -21,7 +21,10 @@ import com.Questboard.backend.modules.challenges.enums.ChallengeStatus;
 import com.Questboard.backend.modules.challenges.enums.ChallengeType;
 import com.Questboard.backend.modules.challenges.enums.EventType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,5 +88,25 @@ public interface ChallengeDefinitionRepository
             ChallengeStatus status);
 
     List<ChallengeDefinition> findActiveChallengesByGameId(Long gameId, Instant now);
+
     List<ChallengeDefinition> findByGameIdAndChallengeType(Long gameId, ChallengeType type);
+
+    boolean existsByGameIdAndChallengeTypeAndStartsAtBetween(
+            Long gameId,
+            ChallengeType challengeType,
+            Instant start,
+            Instant end);
+
+    @Modifying
+    @Transactional
+    @Query("""
+                UPDATE ChallengeDefinition c
+                SET c.status = :inactiveStatus
+                WHERE c.endsAt < :now
+                AND c.status = :activeStatus
+            """)
+    int deactivateExpiredChallenges(
+            @Param("now") Instant now,
+            @Param("activeStatus") ChallengeStatus activeStatus,
+            @Param("inactiveStatus") ChallengeStatus inactiveStatus);
 }
