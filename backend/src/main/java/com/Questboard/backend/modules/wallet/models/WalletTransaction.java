@@ -7,6 +7,9 @@ import java.util.UUID;
 import com.Questboard.backend.modules.wallet.enums.TransactionType;
 import com.Questboard.backend.modules.wallet.enums.WalletCurrency;
 
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -50,5 +53,7 @@ public class WalletTransaction {
 
     private UUID referenceId;
 
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 }

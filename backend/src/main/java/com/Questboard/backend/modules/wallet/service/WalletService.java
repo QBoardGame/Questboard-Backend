@@ -3,10 +3,14 @@ package com.Questboard.backend.modules.wallet.service;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.Questboard.backend.modules.wallet.dto.WalletStatsDto;
 import com.Questboard.backend.modules.wallet.enums.TransactionType;
 import com.Questboard.backend.modules.wallet.enums.WalletCurrency;
+import com.Questboard.backend.modules.wallet.models.Wallet;
 import com.Questboard.backend.modules.wallet.models.WalletTransaction;
 import com.Questboard.backend.modules.wallet.repository.WalletRepository;
 import com.Questboard.backend.modules.wallet.repository.WalletTransactionRepository;
@@ -118,5 +122,25 @@ public class WalletService {
 
             throw new RuntimeException("Wallet credit failed for user " + userId);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public WalletStatsDto getWalletStats(UUID userId) {
+        Wallet wallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user " + userId));
+
+        return WalletStatsDto.builder()
+                .cashBalance(wallet.getCashBalance())
+                .coinBalance(wallet.getCoinBalance())
+                .lockedCashBalance(wallet.getLockedCashBalance())
+                .lockedCoinBalance(wallet.getLockedCoinBalance())
+                .totalCashEarned(wallet.getTotalCashEarned())
+                .totalCoinsEarned(wallet.getTotalCoinsEarned())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<WalletTransaction> getWalletTransactions(UUID userId, Pageable pageable) {
+        return transactionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
 }
