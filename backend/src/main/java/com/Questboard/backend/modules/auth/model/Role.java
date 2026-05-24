@@ -6,7 +6,10 @@ package com.Questboard.backend.modules.auth.model;
 public enum Role {
     USER,
     ADMIN,
-    MODERATOR;
+    MODERATOR,
+    BRAND,
+    STREAMER,
+    CREATOR;
 
     public static Role fromString(String role) {
         if (role == null || role.isBlank()) {
@@ -16,6 +19,9 @@ public enum Role {
         return switch (role.toUpperCase()) {
             case "ADMIN" -> ADMIN;
             case "MODERATOR" -> MODERATOR;
+            case "BRAND" -> BRAND;
+            case "STREAMER" -> STREAMER;
+            case "CREATOR" -> CREATOR;
             default -> USER;
         };
     }

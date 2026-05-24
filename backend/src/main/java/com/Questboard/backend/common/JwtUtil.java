@@ -25,12 +25,13 @@ public class JwtUtil {
     // ---------------- TOKEN GENERATION ----------------
 
     public String generateToken(UUID userId, long expiryMinutes, String tokenType, String role, String email,
-            String provider) {
+            String provider, String username) {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
         claims.put("provider", provider);
         claims.put("role", role);
+        claims.put("username", username);
         claims.put("type", tokenType);
 
         return Jwts.builder()
@@ -50,6 +51,10 @@ public class JwtUtil {
 
     public String extractTokenType(String token) {
         return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
+    public String extractUsername(String token){
+        return extractClaim(token, c -> c.get("username", String.class));
     }
 
     public String extractEmail(String token) {

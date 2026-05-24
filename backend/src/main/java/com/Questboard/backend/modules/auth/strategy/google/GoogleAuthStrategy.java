@@ -35,8 +35,8 @@ public class GoogleAuthStrategy extends BaseAuthStrategy {
         User user = userRepository.findByProviderAndProviderId(AuthProvider.GOOGLE, providerId)
                 .orElseGet(() -> createUser(request.email(), providerId));
 
-        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(), user.getEmail(), user.getProvider().name());
-        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(), user.getEmail(), user.getProvider().name());
+        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(), user.getEmail(), user.getProvider().name(), user.getUsername());
+        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(), user.getEmail(), user.getProvider().name(), user.getUsername());
         return createResponse(user.getEmail(), user.getProvider().name(), accessToken, refreshToken);
     }
 
@@ -48,8 +48,8 @@ public class GoogleAuthStrategy extends BaseAuthStrategy {
         User user = userRepository.findByProviderAndProviderId(AuthProvider.GOOGLE, providerId)
                 .orElseGet(() -> createUser(request.email(), providerId));
 
-        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(), user.getEmail(), user.getProvider().name());
-        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(), user.getEmail(), user.getProvider().name());
+        String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(), user.getEmail(), user.getProvider().name(), user.getUsername());
+        String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(), user.getEmail(), user.getProvider().name(), user.getUsername());
         return createResponse(user.getEmail(), user.getProvider().name(), accessToken, refreshToken);
     }
 

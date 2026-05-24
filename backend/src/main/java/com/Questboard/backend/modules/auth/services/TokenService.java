@@ -67,7 +67,8 @@ public class TokenService {
                 "access token",
                 user.getRole().name(),
                 user.getEmail(),
-                user.getProvider().name());
+                user.getProvider().name(),
+                user.getUsername());
 
         String newRefreshToken = jwtUtil.generateToken(
                 user.getId(),
@@ -75,7 +76,8 @@ public class TokenService {
                 "refresh token",
                 user.getRole().name(),
                 user.getEmail(),
-                user.getProvider().name());
+                user.getProvider().name(),
+                user.getUsername());
 
         // 5. Rotate refresh token in DB
         storedToken.setToken(newRefreshToken);
@@ -95,9 +97,9 @@ public class TokenService {
     public TokenPair createTokens(User user) {
 
         String accessToken = jwtUtil.generateToken(user.getId(), 15, "access token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
+                user.getEmail(), user.getProvider().name(), user.getUsername());
         String refreshToken = jwtUtil.generateToken(user.getId(), 129600, "refresh token", user.getRole().name(),
-                user.getEmail(), user.getProvider().name());
+                user.getEmail(), user.getProvider().name(), user.getUsername());
 
         saveRefreshToken(user, refreshToken);
 

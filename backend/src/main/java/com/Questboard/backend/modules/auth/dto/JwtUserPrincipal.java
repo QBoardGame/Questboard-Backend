@@ -14,4 +14,5 @@ public class JwtUserPrincipal {
     private UUID userId;
     private String email;
     private String role;
+    private String username;
 }

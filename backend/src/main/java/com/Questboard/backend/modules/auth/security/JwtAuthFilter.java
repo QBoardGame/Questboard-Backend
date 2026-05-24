@@ -59,6 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // 3. Extract claims (NO DB CALL)
             String userIdStr = jwtUtil.extractUserId(token);
             String email = jwtUtil.extractEmail(token);
+            String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
 
             if (userIdStr == null) {
@@ -77,7 +78,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             JwtUserPrincipal principal = new JwtUserPrincipal(
                     userId,
                     email,
-                    role
+                    role,
+                    username
             );
 
             // 6. Set authentication in SecurityContext
