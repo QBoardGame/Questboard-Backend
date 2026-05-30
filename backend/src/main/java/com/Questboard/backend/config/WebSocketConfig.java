@@ -30,7 +30,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(gameEventWebSocketHandler, "/ws/game-events")
-                .setAllowedOrigins(frontendUrl, "http://localhost:3000") // In production, restrict this to your app's
+                .setAllowedOrigins(frontendUrl, "http://localhost:3000", "https://www.overwolf-extension://ohicgomoikkmgfkfkgninjaeieikgnkalpldkcdf", "*") // In production, restrict this to your app's
                                                                          // environment
                 .addInterceptors(webSocketAuthInterceptor);
     }

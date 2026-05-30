@@ -75,6 +75,7 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
             // -----------------------------
             // trackingService.processIncomingEvent(request);
 
+            System.out.println("Received event: " + request + " from userId: " + userId);
             // -----------------------------
             // ACK response
             // -----------------------------

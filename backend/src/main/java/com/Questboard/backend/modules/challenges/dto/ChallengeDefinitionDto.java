@@ -30,6 +30,8 @@
 package com.Questboard.backend.modules.challenges.dto;
 
 import com.Questboard.backend.modules.challenges.enums.*;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import lombok.*;
 
 import java.time.Instant;
@@ -87,7 +89,7 @@ public class ChallengeDefinitionDto {
      * "weapon": "SNIPER"
      * }
      */
-    private String conditions;
+    private JsonNode conditions;
 
     /**
      * Reward Information

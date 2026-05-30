@@ -92,14 +92,17 @@ package com.Questboard.backend.modules.challenges.service.impl;
 
 import com.Questboard.backend.modules.challenges.dto.ChallengeCompletedEvent;
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
+import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
+import com.Questboard.backend.modules.challenges.entity.ParticipationStatus;
+import com.Questboard.backend.modules.challenges.entity.UserChallengeParticipation;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
+import com.Questboard.backend.modules.challenges.enums.ChallengeStatus;
 import com.Questboard.backend.modules.challenges.mapper.ChallengeMapper;
 import com.Questboard.backend.modules.challenges.repository.ChallengeDefinitionRepository;
+import com.Questboard.backend.modules.challenges.repository.UserChallengeParticipationRepository;
 import com.Questboard.backend.modules.challenges.repository.UserChallengeProgressRepository;
 import com.Questboard.backend.modules.challenges.service.ChallengeService;
-import com.Questboard.backend.modules.challenges.strategy.ChallengeStrategy;
-import com.Questboard.backend.modules.challenges.strategy.ChallengeStrategyFactory;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +124,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         private final UserChallengeProgressRepository progressRepository;
 
-        private final ChallengeStrategyFactory strategyFactory;
+        private final UserChallengeParticipationRepository participationRepo;
+
         private final ApplicationEventPublisher eventPublisher;
 
         @Override
@@ -129,9 +133,10 @@ public class ChallengeServiceImpl implements ChallengeService {
                         Long gameId,
                         UUID userId) {
 
-                ChallengeStrategy strategy = strategyFactory.getStrategy(gameId);
-
-                List<ChallengeDefinition> challenges = strategy.getActiveChallenges(gameId);
+                List<ChallengeDefinition> challenges = challengeRepository.findActiveChallenges(
+                                gameId,
+                                ChallengeStatus.ACTIVE,
+                                Instant.now());
 
                 return challenges.stream()
                                 .map(challenge -> buildChallengeWithProgress(challenge, userId))
@@ -279,5 +284,59 @@ public class ChallengeServiceImpl implements ChallengeService {
         private boolean isExpired(UserChallengeProgress progress) {
                 return progress.getExpiresAt() != null
                                 && Instant.now().isAfter(progress.getExpiresAt());
+        }
+
+        @Override
+        @Transactional
+        public ParticipationResponse joinChallenge(UUID userId, UUID challengeId) {
+
+                ChallengeDefinition challenge = challengeRepository.findById(challengeId)
+                                .orElseThrow(() -> new RuntimeException("Challenge not found"));
+
+                // 1. Already joined check
+                boolean exists = participationRepo
+                                .existsByUserIdAndChallengeIdAndStatus(
+                                                userId,
+                                                challengeId,
+                                                ParticipationStatus.ACTIVE);
+
+                if (exists) {
+                        return ParticipationResponse.alreadyJoined(challengeId, userId);
+                }
+
+                // 2. Capacity check
+                if (challenge.getTotalPlayersAllowed() != null) {
+
+                        long count = participationRepo
+                                        .countByChallengeIdAndStatus(challengeId, ParticipationStatus.ACTIVE);
+
+                        if (count >= challenge.getTotalPlayersAllowed()) {
+                                throw new RuntimeException("CHALLENGE_FULL");
+                        }
+                }
+
+                // 3. Save participation
+                UserChallengeParticipation participation = UserChallengeParticipation.builder()
+                                .id(UUID.randomUUID())
+                                .userId(userId)
+                                .challengeId(challengeId)
+                                .gameId(challenge.getGameId())
+                                .status(ParticipationStatus.ACTIVE)
+                                .joinedAt(Instant.now())
+                                .build();
+
+                participationRepo.save(participation);
+
+                long updatedCount = participationRepo
+                                .countByChallengeIdAndStatus(challengeId, ParticipationStatus.ACTIVE);
+
+                return ParticipationResponse.builder()
+                                .challengeId(challengeId)
+                                .userId(userId)
+                                .status("JOINED")
+                                .joinedAt(participation.getJoinedAt())
+                                .currentParticipants(updatedCount)
+                                .maxParticipants(challenge.getTotalPlayersAllowed())
+                                .build();
         }
 }

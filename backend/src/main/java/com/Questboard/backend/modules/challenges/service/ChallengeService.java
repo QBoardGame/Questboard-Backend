@@ -15,18 +15,23 @@
 package com.Questboard.backend.modules.challenges.service;
 
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
+import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface ChallengeService {
 
-    List<ChallengeWithProgressDto> getActiveChallenges(
-            Long gameId,
-            UUID userId);
+        List<ChallengeWithProgressDto> getActiveChallenges(
+                        Long gameId,
+                        UUID userId);
 
-    void claimReward(
-            UUID userId,
-            UUID challengeId);
+        void claimReward(
+                        UUID userId,
+                        UUID challengeId);
+
+        ParticipationResponse joinChallenge(
+                        UUID userId,
+                        UUID challengeId);
 
 }

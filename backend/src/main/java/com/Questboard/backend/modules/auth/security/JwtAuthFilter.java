@@ -27,11 +27,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        boolean isWebSocket = path.startsWith("/ws");
+
+        if (isWebSocket) {
+            System.out.println("=== WEBSOCKET REQUEST DETECTED ===");
+            System.out.println("PATH: " + path);
+            System.out.println("METHOD: " + request.getMethod());
+            System.out.println("QUERY: " + request.getQueryString());
+            System.out.println("ORIGIN: " + request.getHeader("Origin"));
+        }
+
+        return path.startsWith("/auth/")
+                || isWebSocket;
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
+
+        System.out.println("REQUEST METHOD: " + request.getMethod());
+        System.out.println("ORIGIN: " + request.getHeader("Origin"));
 
         try {
 
@@ -71,38 +91,45 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             // 4. Build authorities
             List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + (role != null ? role : "USER"))
-            );
+                    new SimpleGrantedAuthority("ROLE_" + (role != null ? role : "USER")));
 
             // 5. Create principal object (clean & reusable)
             JwtUserPrincipal principal = new JwtUserPrincipal(
                     userId,
                     email,
                     role,
-                    username
-            );
+                    username);
 
             // 6. Set authentication in SecurityContext
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            authorities
-                    );
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        } catch (Exception ignored) {
-            // fail silently (or log if needed)
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
+            filterChain.doFilter(request, response);
+            return;
         }
 
         filterChain.doFilter(request, response);
     }
 
     // optional: skip auth endpoints
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/auth/");
-    }
+    // @Override
+    // protected boolean shouldNotFilter(HttpServletRequest request) {
+    // String path = request.getServletPath();
+    // return path.startsWith("/auth/");
+    // }
+
+    // @Override
+    // protected boolean shouldNotFilter(HttpServletRequest request) {
+    // String path = request.getServletPath();
+
+    // return path.startsWith("/auth/")
+    // || path.startsWith("/ws/");
+    // }
+
 }

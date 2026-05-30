@@ -6,6 +6,7 @@ import com.Questboard.backend.modules.challenges.enums.CreatorType;
 import com.Questboard.backend.modules.challenges.enums.EventType;
 import com.Questboard.backend.modules.challenges.enums.RewardType;
 import com.Questboard.backend.modules.challenges.enums.Visibility;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -90,7 +91,11 @@ public class ChallengeDefinition {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "conditions", columnDefinition = "jsonb")
-    private String conditions;
+    private JsonNode conditions;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private JsonNode metadata;
 
     /**
      * Reward Configuration
@@ -142,6 +147,9 @@ public class ChallengeDefinition {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Column(name = "total_player_allowed")
+    private Long totalPlayersAllowed;
 
     @PrePersist
     protected void onCreate() {

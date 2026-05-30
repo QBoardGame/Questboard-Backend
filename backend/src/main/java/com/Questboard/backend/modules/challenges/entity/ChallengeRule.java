@@ -8,6 +8,7 @@ import org.hibernate.type.SqlTypes;
 import com.Questboard.backend.modules.challenges.enums.ChallengeDifficulty;
 import com.Questboard.backend.modules.challenges.enums.ChallengeType;
 import com.Questboard.backend.modules.challenges.enums.EventType;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -59,7 +60,7 @@ public class ChallengeRule {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String conditions;
+    private JsonNode conditions;
 
     @Enumerated(EnumType.STRING)
     private ChallengeDifficulty difficulty;

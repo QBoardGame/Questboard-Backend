@@ -70,7 +70,7 @@ public interface UserChallengeProgressRepository
             UUID challengeId);
 
     UserChallengeProgress findByUserIdAndChallengeIdAndGameIdAndCompleted(UUID userId, UUID challengeId, Long gameId,
-            boolean isActive);
+            boolean isCompleted);
 
     @Query("""
             UPDATE UserChallengeProgress u

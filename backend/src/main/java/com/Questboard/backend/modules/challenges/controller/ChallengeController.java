@@ -2,9 +2,11 @@ package com.Questboard.backend.modules.challenges.controller;
 
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
+import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
 import com.Questboard.backend.modules.challenges.service.ChallengeService;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +43,16 @@ public class ChallengeController {
         challengeService.claimReward(
                 principal.getUserId(),
                 challengeId);
+    }
+
+    @PostMapping("/{challengeId}/join")
+    public ResponseEntity<?> joinChallenge(
+            @PathVariable UUID challengeId,
+            @AuthenticationPrincipal JwtUserPrincipal principal) {
+
+        ParticipationResponse response = challengeService.joinChallenge(principal.getUserId(), challengeId);
+
+        return ResponseEntity.ok(response);
     }
 
 }
