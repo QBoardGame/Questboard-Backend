@@ -132,6 +132,8 @@ public class ChallengeMapper {
         return UserChallengeProgressDto.builder()
                 .id(uc.getId())
                 .userId(uc.getUserId())
+                .title(uc.getTitle())
+                .description(uc.getDescription())
                 .challengeId(uc.getChallengeId())
                 .progress(uc.getProgress())
                 .targetValue(uc.getTargetValue())
@@ -139,6 +141,11 @@ public class ChallengeMapper {
                 .claimed(uc.isClaimed())
                 .completedAt(uc.getCompletedAt())
                 .updatedAt(uc.getUpdatedAt())
+                .endsAt(uc.getExpiresAt())
+                .challengeType(uc.getChallengeType())
+                .rewardValue(uc.getRewardValue())
+                .rewardType(uc.getRewardType())
+                .eventType(uc.getEventType())
                 .build();
     }
 

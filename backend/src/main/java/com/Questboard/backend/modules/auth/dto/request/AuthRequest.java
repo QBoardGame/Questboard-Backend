@@ -1,24 +1,42 @@
 package com.Questboard.backend.modules.auth.dto.request;
 
 import com.Questboard.backend.modules.auth.dto.AuthType;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
-/**
- * Request payload for authentication flows.
- */
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
+@Builder
 public record AuthRequest(
 
-    @NotNull(message = "authType is required")
-    AuthType authType,
+        @NotNull(message = "authType is required") AuthType authType,
 
-    @NotBlank(message = "email is required")
-    @Email(message = "email must be a valid email address")
-    String email,
+        String email,
 
-    String password,
+        String password,
 
-    String token
+        String token
 
-) {}
+) {
+
+    @AssertTrue(message = "Invalid authentication payload")
+    public boolean isValidAuthRequest() {
+
+        if (authType == AuthType.EMAIL_PASSWORD) {
+            return email != null
+                    && !email.isBlank()
+                    && password != null
+                    && !password.isBlank()
+                    && (token == null || token.isBlank());
+        }
+
+        if (authType == AuthType.GOOGLE_OAUTH) {
+            return token != null
+                    && !token.isBlank()
+                    && (email == null || email.isBlank())
+                    && (password == null || password.isBlank());
+        }
+
+        return false;
+    }
+}

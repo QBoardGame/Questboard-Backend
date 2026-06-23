@@ -89,14 +89,6 @@ public class JwtUtil {
 
     // ---------------- VALIDATION ----------------
 
-    // public boolean validateToken(String token) {
-    // try {
-    // return !isExpired(token);
-    // } catch (Exception e) {
-    // return false;
-    // }
-    // }
-
     public boolean isTokenValid(String token) {
         try {
             return extractExpiration(token).after(new Date());
@@ -116,10 +108,6 @@ public class JwtUtil {
     public boolean validateTokenType(String token, String expectedType) {
         return expectedType.equals(extractTokenType(token));
     }
-
-    // private boolean isExpired(String token) {
-    // return extractExpiration(token).before(new Date());
-    // }
 
     public boolean willExpireSoon(String token, int thresholdMinutes) {
         try {

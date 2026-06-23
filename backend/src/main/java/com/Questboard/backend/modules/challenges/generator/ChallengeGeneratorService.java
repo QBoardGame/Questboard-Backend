@@ -302,7 +302,8 @@ public class ChallengeGeneratorService {
                 String title = selectedRule.getTitleTemplate()
                                 .replace("{x}", String.valueOf(target));
 
-                long rewardCoins = target * selectedRule.getRewardMultiplier();
+                // long rewardCoins = target * selectedRule.getRewardMultiplier();
+                long rewardCoins = challengeType == ChallengeType.DAILY ? 5 : 20;
 
                 // -------------------------------------------------
                 // CONDITIONS (JSONB SAFE)
@@ -351,29 +352,40 @@ public class ChallengeGeneratorService {
                 // -----------------------------
                 // DAILY CHALLENGES (LOW REWARD)
                 // -----------------------------
-                for (int i = 0; i < 2; i++) {
+                // for (int i = 0; i < 2; i++) {
 
-                        ChallengeDefinition daily = generateChallenge(
+                // ChallengeDefinition daily = generateChallenge(
+                // gameId,
+                // ChallengeType.DAILY,
+                // ChallengeDifficulty.EASY);
+
+                // daily = applyRewardMultiplier(daily, 1.0);
+
+                // challenges.add(daily);
+                // }
+
+                // // -----------------------------
+                // // WEEKLY CHALLENGE (HIGHER REWARD)
+                // // -----------------------------
+                // ChallengeDefinition weekly = generateChallenge(
+                // gameId,
+                // ChallengeType.WEEKLY,
+                // ChallengeDifficulty.HARD);
+
+                // weekly = applyRewardMultiplier(weekly, 2.5);
+
+                // challenges.add(weekly);
+                for (int i = 0; i < 2; i++) {
+                        challenges.add(generateChallenge(
                                         gameId,
                                         ChallengeType.DAILY,
-                                        ChallengeDifficulty.EASY);
-
-                        daily = applyRewardMultiplier(daily, 1.0);
-
-                        challenges.add(daily);
+                                        ChallengeDifficulty.EASY));
                 }
 
-                // -----------------------------
-                // WEEKLY CHALLENGE (HIGHER REWARD)
-                // -----------------------------
-                ChallengeDefinition weekly = generateChallenge(
+                challenges.add(generateChallenge(
                                 gameId,
                                 ChallengeType.WEEKLY,
-                                ChallengeDifficulty.HARD);
-
-                weekly = applyRewardMultiplier(weekly, 2.5);
-
-                challenges.add(weekly);
+                                ChallengeDifficulty.HARD));
 
                 return challenges;
         }
@@ -381,17 +393,17 @@ public class ChallengeGeneratorService {
         // -------------------------------------------------
         // REWARD SCALING ENGINE
         // -------------------------------------------------
-        private ChallengeDefinition applyRewardMultiplier(
-                        ChallengeDefinition challenge,
-                        double multiplier) {
+        // private ChallengeDefinition applyRewardMultiplier(
+        //                 ChallengeDefinition challenge,
+        //                 double multiplier) {
 
-                long base = Long.parseLong(challenge.getRewardValue());
-                long scaled = (long) (base * multiplier);
+        //         long base = Long.parseLong(challenge.getRewardValue());
+        //         long scaled = (long) (base * multiplier);
 
-                challenge.setRewardValue(String.valueOf(scaled));
+        //         challenge.setRewardValue(String.valueOf(scaled));
 
-                return challenge;
-        }
+        //         return challenge;
+        // }
 
         // -------------------------------------------------
         // WEIGHTED RANDOM SELECTION

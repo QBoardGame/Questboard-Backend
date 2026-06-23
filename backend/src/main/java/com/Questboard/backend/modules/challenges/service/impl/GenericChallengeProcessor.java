@@ -2,9 +2,11 @@ package com.Questboard.backend.modules.challenges.service.impl;
 
 import com.Questboard.backend.modules.challenges.adapter.GameEventAdapter;
 import com.Questboard.backend.modules.challenges.dto.CurrentProgressDto;
+import com.Questboard.backend.modules.challenges.dto.EventProcessingResult;
 import com.Questboard.backend.modules.challenges.dto.GameEventDto;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
+import com.Questboard.backend.modules.challenges.enums.EventType;
 import com.Questboard.backend.modules.challenges.repository.ChallengeDefinitionRepository;
 import com.Questboard.backend.modules.challenges.repository.UserChallengeProgressRepository;
 import com.Questboard.backend.modules.challenges.service.RewardService;
@@ -15,8 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,10 +37,10 @@ public class GenericChallengeProcessor {
     private final Map<Long, GameEventAdapter> adapters;
 
     public GenericChallengeProcessor(List<GameEventAdapter> adapterList,
-                                     ChallengeDefinitionRepository challengeRepository,
-                                     UserChallengeProgressRepository progressRepository,
-                                     RewardService rewardService,
-                                     RuleEngine ruleEngine) {
+            ChallengeDefinitionRepository challengeRepository,
+            UserChallengeProgressRepository progressRepository,
+            RewardService rewardService,
+            RuleEngine ruleEngine) {
         this.adapters = adapterList.stream()
                 .collect(Collectors.toMap(GameEventAdapter::supportedGameId, Function.identity()));
         this.challengeRepository = challengeRepository;
@@ -44,74 +49,349 @@ public class GenericChallengeProcessor {
         this.ruleEngine = ruleEngine;
     }
 
+    // @Transactional
+    // public void process(GameEventDto event, UUID userId) {
+    // if (event == null) {
+    // return;
+    // }
+
+    // GameEventAdapter adapter = adapters.get(event.getGameId());
+    // if (adapter == null) {
+    // throw new IllegalStateException("No GameEventAdapter found for gameId=" +
+    // event.getGameId());
+    // }
+
+    // JsonNode normalizedEvent = adapter.normalize(event);
+    // System.out.println("normalized Events: " + normalizedEvent);
+    // Instant now = Instant.now();
+    // List<ChallengeDefinition> challenges =
+    // challengeRepository.findActiveByEventType(
+    // event.getGameId(),
+    // event.getEventType(),
+    // now);
+
+    // if (challenges.isEmpty()) {
+    // return;
+    // }
+
+    // long eventValue = event.getValue() != null ? event.getValue() : 0L;
+
+    // for (ChallengeDefinition challenge : challenges) {
+    // try {
+    // if (!matches(challenge, normalizedEvent)) {
+    // continue;
+    // }
+
+    // if (challenge.getEndsAt() != null && now.isAfter(challenge.getEndsAt())) {
+    // continue;
+    // }
+
+    // UserChallengeProgress progress = progressRepository
+    // .findByUserIdAndChallengeId(userId, challenge.getId())
+    // .orElseGet(() -> createProgress(userId, challenge));
+
+    // if (progress.isCompleted()) {
+    // continue;
+    // }
+
+    // if (progress.getExpiresAt() != null && now.isAfter(progress.getExpiresAt()))
+    // {
+    // continue;
+    // }
+
+    // long updatedProgress = progress.getProgress() + eventValue;
+    // progress.setProgress(updatedProgress);
+
+    // if (updatedProgress >= challenge.getTargetValue()) {
+    // progress.setCompleted(true);
+    // progress.setCompletedAt(now);
+
+    // if (!progress.isClaimed()) {
+    // rewardService.grantReward(
+    // userId,
+    // challenge.getRewardType(),
+    // challenge.getRewardValue(),
+    // challenge.getId());
+    // progress.setClaimed(true);
+    // }
+    // }
+
+    // progressRepository.save(progress);
+    // } catch (Exception e) {
+    // log.error("Error processing challenge {} for user {}", challenge.getId(),
+    // userId, e);
+    // }
+    // }
+    // }
+
+    // @Transactional
+    // public void process(GameEventDto event, UUID userId) {
+
+    // if (event == null)
+    // return;
+
+    // GameEventAdapter adapter = adapters.get(event.getGameId());
+    // if (adapter == null) {
+    // throw new IllegalStateException("No GameEventAdapter found");
+    // }
+
+    // JsonNode normalizedEvent = adapter.normalize(event);
+    // boolean isHeadshot = normalizedEvent.path("headshot").asBoolean(false);
+    // Instant now = Instant.now();
+
+    // List<UserChallengeProgress> progresses =
+    // progressRepository.findByUserIdAndGameIdAndCompletedFalse(userId,
+    // event.getGameId());
+
+    // if (progresses.isEmpty())
+    // return;
+
+    // Set<EventType> applicableEvents = resolveEventTypes(event.getEventType(),
+    // isHeadshot);
+
+    // long eventValue = event.getValue() != null ? event.getValue() : 1L;
+
+    // for (UserChallengeProgress progress : progresses) {
+    // try {
+
+    // // 🔥 MATCH EVENT TYPE (NEW LOGIC)
+    // if (!applicableEvents.contains(progress.getEventType())) {
+    // continue;
+    // }
+
+    // // ❌ ruleEngine still disabled
+    // // if (!ruleEngine.evaluate(...)) continue;
+
+    // if (!progress.getGameId().equals(event.getGameId())) {
+    // continue;
+    // }
+
+    // if (progress.getExpiresAt() != null && now.isAfter(progress.getExpiresAt()))
+    // {
+    // continue;
+    // }
+
+    // long updated = progress.getProgress() + eventValue;
+    // progress.setProgress(updated);
+
+    // if (updated >= progress.getTargetValue()) {
+    // progress.setCompleted(true);
+    // progress.setCompletedAt(now);
+
+    // if (!progress.isClaimed()) {
+    // rewardService.grantReward(
+    // userId,
+    // progress.getRewardType(),
+    // progress.getRewardValue(),
+    // progress.getChallengeId());
+    // progress.setClaimed(true);
+    // }
+    // }
+
+    // progress.setUpdatedAt(now);
+    // progressRepository.save(progress);
+
+    // } catch (Exception e) {
+    // log.error("Error processing progress {}", progress.getId(), e);
+    // }
+    // }
+    // }
+
+    // @Transactional
+    // public List<EventProcessingResult> process(GameEventDto event, UUID userId) {
+
+    // if (event == null) {
+    // return;
+    // }
+
+    // GameEventAdapter adapter = adapters.get(event.getGameId());
+
+    // if (adapter == null) {
+    // throw new IllegalStateException(
+    // "No GameEventAdapter found");
+    // }
+
+    // JsonNode normalizedEvent = adapter.normalize(event);
+
+    // Instant now = Instant.now();
+
+    // List<UserChallengeProgress> progresses = progressRepository
+    // .findByUserIdAndGameIdAndCompletedFalse(
+    // userId,
+    // event.getGameId());
+
+    // if (progresses.isEmpty()) {
+    // return;
+    // }
+
+    // for (UserChallengeProgress progress : progresses) {
+
+    // try {
+
+    // if (progress.getExpiresAt() != null
+    // && now.isAfter(progress.getExpiresAt())) {
+    // continue;
+    // }
+
+    // long increment = adapter.calculateProgress(
+    // progress,
+    // event,
+    // normalizedEvent);
+
+    // if (increment <= 0) {
+    // continue;
+    // }
+
+    // long updated = progress.getProgress() + increment;
+
+    // progress.setProgress(updated);
+
+    // if (updated >= progress.getTargetValue()) {
+
+    // progress.setCompleted(true);
+    // progress.setCompletedAt(now);
+
+    // if (!progress.isClaimed()) {
+
+    // rewardService.grantReward(
+    // userId,
+    // progress.getRewardType(),
+    // progress.getRewardValue(),
+    // progress.getChallengeId());
+
+    // progress.setClaimed(true);
+    // }
+    // }
+
+    // progress.setUpdatedAt(now);
+
+    // progressRepository.save(progress);
+
+    // } catch (Exception e) {
+    // log.error(
+    // "Error processing progress {}",
+    // progress.getId(),
+    // e);
+    // }
+    // }
+    // }
+
     @Transactional
-    public void process(GameEventDto event, UUID userId) {
+    public List<EventProcessingResult> process(
+            GameEventDto event,
+            UUID userId) {
+
         if (event == null) {
-            return;
+            return Collections.emptyList();
         }
 
         GameEventAdapter adapter = adapters.get(event.getGameId());
+
         if (adapter == null) {
-            throw new IllegalStateException("No GameEventAdapter found for gameId=" + event.getGameId());
+            throw new IllegalStateException(
+                    "No GameEventAdapter found for gameId: "
+                            + event.getGameId());
         }
 
         JsonNode normalizedEvent = adapter.normalize(event);
-        Instant now = Instant.now();
-        List<ChallengeDefinition> challenges = challengeRepository.findActiveByEventType(
-                event.getGameId(),
-                event.getEventType(),
-                now);
 
-        if (challenges.isEmpty()) {
-            return;
+        Instant now = Instant.now();
+
+        List<UserChallengeProgress> progresses = progressRepository.findByUserIdAndGameIdAndCompletedFalse(
+                userId,
+                event.getGameId());
+
+        if (progresses.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        long eventValue = event.getValue() != null ? event.getValue() : 0L;
+        List<EventProcessingResult> results = new ArrayList<>();
 
-        for (ChallengeDefinition challenge : challenges) {
+        for (UserChallengeProgress progress : progresses) {
+
             try {
-                if (!matches(challenge, normalizedEvent)) {
+
+                if (progress.getExpiresAt() != null
+                        && now.isAfter(progress.getExpiresAt())) {
                     continue;
                 }
 
-                if (challenge.getEndsAt() != null && now.isAfter(challenge.getEndsAt())) {
+                long increment = adapter.calculateProgress(
+                        progress,
+                        event,
+                        normalizedEvent);
+
+                if (increment <= 0) {
                     continue;
                 }
 
-                UserChallengeProgress progress = progressRepository
-                        .findByUserIdAndChallengeId(userId, challenge.getId())
-                        .orElseGet(() -> createProgress(userId, challenge));
+                long updated = progress.getProgress() + increment;
 
-                if (progress.isCompleted()) {
-                    continue;
-                }
+                progress.setProgress(updated);
 
-                if (progress.getExpiresAt() != null && now.isAfter(progress.getExpiresAt())) {
-                    continue;
-                }
+                if (updated >= progress.getTargetValue()) {
 
-                long updatedProgress = progress.getProgress() + eventValue;
-                progress.setProgress(updatedProgress);
-
-                if (updatedProgress >= challenge.getTargetValue()) {
                     progress.setCompleted(true);
                     progress.setCompletedAt(now);
 
                     if (!progress.isClaimed()) {
+
                         rewardService.grantReward(
                                 userId,
-                                challenge.getRewardType(),
-                                challenge.getRewardValue(),
-                                challenge.getId());
+                                progress.getRewardType(),
+                                progress.getRewardValue(),
+                                progress.getChallengeId());
+
                         progress.setClaimed(true);
                     }
                 }
 
-                progressRepository.save(progress);
+                progress.setUpdatedAt(now);
+
+                UserChallengeProgress saved = progressRepository.save(progress);
+
+                results.add(
+                        EventProcessingResult.builder()
+                                .gameId(saved.getGameId())
+                                .challengeId(saved.getChallengeId())
+                                .progress(saved.getProgress())
+                                .targetValue(saved.getTargetValue())
+                                .completed(saved.isCompleted())
+                                .claimed(saved.isClaimed())
+                                .build());
+
             } catch (Exception e) {
-                log.error("Error processing challenge {} for user {}", challenge.getId(), userId, e);
+
+                log.error(
+                        "Error processing progress {}",
+                        progress.getId(),
+                        e);
             }
         }
+
+        return results;
+    }
+
+    // private Set<EventType> resolveEventTypes(EventType eventType) {
+    // return switch (eventType) {
+
+    // case HEADSHOT -> Set.of(EventType.HEADSHOT, EventType.KILL);
+
+    // case ASSIST -> Set.of(EventType.ASSIST);
+
+    // case KILL -> Set.of(EventType.KILL);
+
+    // default -> Set.of(eventType);
+    // };
+    // }
+
+    private Set<EventType> resolveEventTypes(EventType eventType, boolean isHeadshot) {
+
+        if (eventType == EventType.KILL && isHeadshot) {
+            return Set.of(EventType.KILL, EventType.HEADSHOT);
+        }
+
+        return Set.of(eventType);
     }
 
     public UserChallengeProgress getCurrentProgress(CurrentProgressDto request, UUID userId) {

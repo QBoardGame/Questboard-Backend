@@ -93,6 +93,7 @@ package com.Questboard.backend.modules.challenges.service.impl;
 import com.Questboard.backend.modules.challenges.dto.ChallengeCompletedEvent;
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
 import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.entity.ChallengeDefinition;
 import com.Questboard.backend.modules.challenges.entity.ParticipationStatus;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeParticipation;
@@ -129,7 +130,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         private final ApplicationEventPublisher eventPublisher;
 
         @Override
-        public List<ChallengeWithProgressDto> getActiveChallenges(
+        public List<UserChallengeProgressDto> getActiveChallenges(
                         Long gameId,
                         UUID userId) {
 
@@ -169,21 +170,50 @@ public class ChallengeServiceImpl implements ChallengeService {
                 progressRepository.save(progress);
         }
 
-        private ChallengeWithProgressDto buildChallengeWithProgress(
+        // private ChallengeWithProgressDto buildChallengeWithProgress(
+        // ChallengeDefinition challenge,
+        // UUID userId) {
+
+        // UserChallengeProgress progress = progressRepository
+        // .findByUserIdAndChallengeId(userId, challenge.getId())
+        // .orElse(null);
+
+        // return ChallengeWithProgressDto.builder()
+        // .challenge(ChallengeMapper.toDto(challenge))
+        // .progress(
+        // progress != null
+        // ? ChallengeMapper.toDto(progress)
+        // : null)
+        // .build();
+        // }
+
+        private UserChallengeProgressDto buildChallengeWithProgress(
                         ChallengeDefinition challenge,
                         UUID userId) {
 
                 UserChallengeProgress progress = progressRepository
                                 .findByUserIdAndChallengeId(userId, challenge.getId())
-                                .orElse(null);
+                                .orElseGet(() -> {
+                                        UserChallengeProgress newProgress = UserChallengeProgress.builder()
+                                                        .userId(userId)
+                                                        .challengeId(challenge.getId())
+                                                        .title(challenge.getTitle())
+                                                        .description(challenge.getDescription())
+                                                        .eventType(challenge.getEventType())
+                                                        .progress(0L)
+                                                        .targetValue(challenge.getTargetValue())
+                                                        .expiresAt(challenge.getEndsAt())
+                                                        .gameId(challenge.getGameId())
+                                                        .challengeType(challenge.getChallengeType())
+                                                        .rewardValue(challenge.getRewardValue())
+                                                        .rewardType(challenge.getRewardType())
+                                                        // .conditions(challenge.getConditions())
+                                                        .build();
 
-                return ChallengeWithProgressDto.builder()
-                                .challenge(ChallengeMapper.toDto(challenge))
-                                .progress(
-                                                progress != null
-                                                                ? ChallengeMapper.toDto(progress)
-                                                                : null)
-                                .build();
+                                        return progressRepository.save(newProgress);
+                                });
+
+                return ChallengeMapper.toDto(progress);
         }
 
         // @Transactional

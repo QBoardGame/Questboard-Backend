@@ -2,6 +2,7 @@ package com.Questboard.backend.modules.wallet.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.Questboard.backend.modules.wallet.enums.TransactionType;
@@ -22,5 +23,5 @@ public class WalletTransactionResponseDto {
     private final Long coinAmount;
     private final Long balanceAfterCoins;
     private final String description;
-    private final Instant createdAt;
+    private final LocalDate createdAt;
 }

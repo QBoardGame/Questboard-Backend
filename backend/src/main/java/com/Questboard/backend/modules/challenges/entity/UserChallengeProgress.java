@@ -3,7 +3,13 @@ package com.Questboard.backend.modules.challenges.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import com.Questboard.backend.modules.challenges.enums.ChallengeType;
 import com.Questboard.backend.modules.challenges.enums.EventType;
+import com.Questboard.backend.modules.challenges.enums.RewardType;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,6 +55,12 @@ public class UserChallengeProgress {
     @Column(name = "game_id", nullable = false)
     private Long gameId;
 
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
     private EventType eventType;
@@ -65,6 +77,14 @@ public class UserChallengeProgress {
     @Column(name = "reward_processing", nullable = false)
     private boolean rewardProcessing;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "conditions", columnDefinition = "jsonb")
+    private JsonNode conditions;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "challenge_type", nullable = false)
+    private ChallengeType challengeType;
+
     @Column(nullable = false)
     private boolean claimed;
 
@@ -79,6 +99,13 @@ public class UserChallengeProgress {
 
     @Column(name = "expires_at")
     private Instant expiresAt;
+
+    @Column(name = "reward_value", nullable = false)
+    private String rewardValue;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reward_type", nullable = false)
+    private RewardType rewardType;
 
     @Version
     private Long version;

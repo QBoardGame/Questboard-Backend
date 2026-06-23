@@ -32,6 +32,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         boolean isWebSocket = path.startsWith("/ws");
 
+        System.out.println("===ENDPOINT CALLED====");
+        System.out.println("PATH" + path);
+
         if (isWebSocket) {
             System.out.println("=== WEBSOCKET REQUEST DETECTED ===");
             System.out.println("PATH: " + path);

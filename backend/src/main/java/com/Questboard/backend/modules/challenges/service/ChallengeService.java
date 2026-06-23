@@ -16,13 +16,14 @@ package com.Questboard.backend.modules.challenges.service;
 
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
 import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface ChallengeService {
 
-        List<ChallengeWithProgressDto> getActiveChallenges(
+        List<UserChallengeProgressDto> getActiveChallenges(
                         Long gameId,
                         UUID userId);
 

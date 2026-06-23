@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.Questboard.backend.common.JwtUtil;
+import com.Questboard.backend.infrastructure.GameEventWebSocketHandler;
 import com.Questboard.backend.modules.auth.dto.TokenPair;
 import com.Questboard.backend.modules.auth.dto.request.RefreshTokenRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
@@ -22,12 +23,81 @@ public class TokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final GameEventWebSocketHandler gameEventWebSocketHandler;
 
-    public TokenService(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, JwtUtil jwtUtil) {
+    public TokenService(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, JwtUtil jwtUtil,
+            GameEventWebSocketHandler gameEventWebSocketHandler) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.gameEventWebSocketHandler = gameEventWebSocketHandler;
     }
+
+    // public AuthResponse refreshToken(RefreshTokenRequest request) {
+
+    // if (request == null || !StringUtils.hasText(request.refreshToken())) {
+    // throw new AuthException("Refresh token is required");
+    // }
+
+    // String token = request.refreshToken();
+
+    // // 1. Validate JWT signature + expiry
+    // if (!jwtUtil.isTokenValid(token)) {
+    // throw new AuthException("Invalid or expired refresh token");
+    // }
+
+    // // 2. Extract userId
+    // String userId = jwtUtil.extractUserId(token);
+
+    // User user = userRepository.findById(UUID.fromString(userId))
+    // .orElseThrow(() -> new AuthException("User not found"));
+
+    // // 3. Validate token in DB
+    // RefreshToken storedToken = refreshTokenRepository.findByUser(user)
+    // .orElseThrow(() -> new AuthException("Refresh token not found"));
+
+    // if (!storedToken.getToken().equals(token)) {
+    // throw new AuthException("Refresh token mismatch");
+    // }
+
+    // if (storedToken.isRevoked() ||
+    // storedToken.getExpiryDate().isBefore(Instant.now())) {
+    // throw new AuthException("Refresh token expired or revoked");
+    // }
+
+    // // 4. Generate new tokens
+    // String newAccessToken = jwtUtil.generateToken(
+    // user.getId(),
+    // 15,
+    // "access token",
+    // user.getRole().name(),
+    // user.getEmail(),
+    // user.getProvider().name(),
+    // user.getUsername());
+
+    // String newRefreshToken = jwtUtil.generateToken(
+    // user.getId(),
+    // 129600,
+    // "refresh token",
+    // user.getRole().name(),
+    // user.getEmail(),
+    // user.getProvider().name(),
+    // user.getUsername());
+
+    // // 5. Rotate refresh token in DB
+    // storedToken.setToken(newRefreshToken);
+    // storedToken.setExpiryDate(Instant.now().plusSeconds(60L * 60 * 24 * 90));
+    // refreshTokenRepository.save(storedToken);
+
+    // // 6. Return response
+    // return AuthResponse.builder()
+    // .email(user.getEmail())
+    // .provider(user.getProvider().name())
+    // .message("Token refreshed successfully")
+    // .accessToken(newAccessToken)
+    // .refreshToken(newRefreshToken)
+    // .build();
+    // }
 
     public AuthResponse refreshToken(RefreshTokenRequest request) {
 
@@ -37,30 +107,23 @@ public class TokenService {
 
         String token = request.refreshToken();
 
-        // 1. Validate JWT signature + expiry
         if (!jwtUtil.isTokenValid(token)) {
             throw new AuthException("Invalid or expired refresh token");
         }
 
-        // 2. Extract userId
-        String userId = jwtUtil.extractUserId(token);
-
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new AuthException("User not found"));
-
-        // 3. Validate token in DB
-        RefreshToken storedToken = refreshTokenRepository.findByUser(user)
+        RefreshToken storedToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new AuthException("Refresh token not found"));
 
-        if (!storedToken.getToken().equals(token)) {
-            throw new AuthException("Refresh token mismatch");
+        if (storedToken.isRevoked()) {
+            throw new AuthException("Refresh token revoked");
         }
 
-        if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new AuthException("Refresh token expired or revoked");
+        if (storedToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new AuthException("Refresh token expired");
         }
 
-        // 4. Generate new tokens
+        User user = storedToken.getUser();
+
         String newAccessToken = jwtUtil.generateToken(
                 user.getId(),
                 15,
@@ -79,12 +142,11 @@ public class TokenService {
                 user.getProvider().name(),
                 user.getUsername());
 
-        // 5. Rotate refresh token in DB
         storedToken.setToken(newRefreshToken);
         storedToken.setExpiryDate(Instant.now().plusSeconds(60L * 60 * 24 * 90));
+
         refreshTokenRepository.save(storedToken);
 
-        // 6. Return response
         return AuthResponse.builder()
                 .email(user.getEmail())
                 .provider(user.getProvider().name())
@@ -134,5 +196,7 @@ public class TokenService {
                     token.setRevoked(true);
                     refreshTokenRepository.save(token);
                 });
+
+        gameEventWebSocketHandler.disconnectUser(userId);
     }
 }

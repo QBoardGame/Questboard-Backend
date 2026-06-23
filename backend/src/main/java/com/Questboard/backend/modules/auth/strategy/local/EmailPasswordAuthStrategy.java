@@ -12,7 +12,6 @@ import com.Questboard.backend.modules.auth.repository.UserRepository;
 import com.Questboard.backend.modules.auth.services.TokenService;
 import com.Questboard.backend.modules.auth.strategy.BaseAuthStrategy;
 
-import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,11 +44,15 @@ public class EmailPasswordAuthStrategy extends BaseAuthStrategy {
     public AuthResponse authenticate(AuthRequest request) {
         validateRequest(request);
 
-        User user = userRepository.findByEmailAndProvider(request.email(), AuthProvider.EMAIL)
-                .orElseThrow(() -> new AuthException("Invalid credentials for email authentication"));
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new AuthException("Invalid credentials"));
 
-        if (!passwordEncoder.matches(request.password(), Optional.ofNullable(user.getPassword()).orElse(""))) {
-            throw new AuthException("Invalid credentials for email authentication");
+        if (user.getPassword() == null) {
+            throw new AuthException("Please login with Google");
+        }
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new AuthException("Invalid credentials");
         }
 
         TokenPair tokens = tokenService.createTokens(user);
@@ -87,7 +90,8 @@ public class EmailPasswordAuthStrategy extends BaseAuthStrategy {
         eventPublisher.publishEvent(
                 new UserRegistrationEvent(savedUser));
 
-        return createResponse(savedUser.getEmail(), savedUser.getProvider().name(), tokens.accessToken(), tokens.refreshToken());
+        return createResponse(savedUser.getEmail(), savedUser.getProvider().name(), tokens.accessToken(),
+                tokens.refreshToken());
     }
 
     private void validateRequest(AuthRequest request) {

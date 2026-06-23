@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 public class ChallengeWithProgressDto {
 
-    private ChallengeDefinitionDto challenge;
+    // private ChallengeDefinitionDto challenge;
 
     private UserChallengeProgressDto progress;
 

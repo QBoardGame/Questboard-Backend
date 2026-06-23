@@ -1,8 +1,5 @@
 package com.Questboard.backend.modules.auth.strategy;
 
-import java.util.UUID;
-
-import com.Questboard.backend.modules.auth.model.User;
 import com.Questboard.backend.modules.auth.repository.UserRepository;
 import com.Questboard.backend.modules.auth.services.TokenService;
 

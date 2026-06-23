@@ -8,6 +8,7 @@ import lombok.Getter;
 @Builder
 public class WalletStatsDto {
 
+    private final String type;
     private final BigDecimal cashBalance;
     private final Long coinBalance;
     private final BigDecimal lockedCashBalance;

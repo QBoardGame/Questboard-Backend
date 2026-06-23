@@ -3,9 +3,6 @@ package com.Questboard.backend.modules.challenges.adapter;
 import com.Questboard.backend.modules.challenges.dto.GameEventDto;
 import com.Questboard.backend.modules.challenges.entity.UserChallengeProgress;
 import com.Questboard.backend.modules.challenges.enums.EventType;
-import com.Questboard.backend.modules.challenges.mapper.valorant.ValorantAgentMapper;
-import com.Questboard.backend.modules.challenges.mapper.valorant.ValorantMapMapper;
-import com.Questboard.backend.modules.challenges.mapper.valorant.ValorantWeaponMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,14 +16,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class ValorantGameEventAdapter implements GameEventAdapter {
+public class CounterStrike2GameEventAdapter implements GameEventAdapter {
 
-    private static final Long VALORANT_GAME_ID = 21640L;
+    private static final Long COUNTER_STRIKE_2_GAME_ID = 22730L;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public Long supportedGameId() {
-        return VALORANT_GAME_ID;
+        return COUNTER_STRIKE_2_GAME_ID;
     }
 
     @Override
@@ -57,14 +55,16 @@ public class ValorantGameEventAdapter implements GameEventAdapter {
         if (event.getMetadata() != null
                 && event.getMetadata().isObject()) {
 
-            ObjectNode metadata = (ObjectNode) event.getMetadata().deepCopy();
+            ObjectNode metadata =
+                    (ObjectNode) event.getMetadata().deepCopy();
 
             normalizeMetadata(metadata);
 
             metadata.properties()
-                    .forEach(entry -> normalized.set(
-                            entry.getKey(),
-                            entry.getValue()));
+                    .forEach(entry ->
+                            normalized.set(
+                                    entry.getKey(),
+                                    entry.getValue()));
         }
 
         return normalized;
@@ -73,8 +73,6 @@ public class ValorantGameEventAdapter implements GameEventAdapter {
     private void normalizeMetadata(ObjectNode metadata) {
 
         normalizeWeapon(metadata);
-
-        normalizeAgent(metadata);
 
         normalizeMap(metadata);
     }
@@ -91,22 +89,9 @@ public class ValorantGameEventAdapter implements GameEventAdapter {
 
         metadata.put(
                 "weapon",
-                ValorantWeaponMapper.normalize(weapon));
-    }
-
-    private void normalizeAgent(ObjectNode metadata) {
-
-        JsonNode agentNode = metadata.get("agent");
-
-        if (agentNode == null) {
-            return;
-        }
-
-        String agent = agentNode.asText();
-
-        metadata.put(
-                "agent",
-                ValorantAgentMapper.normalize(agent));
+                weapon
+                        .replace("weapon_", "")
+                        .toUpperCase());
     }
 
     private void normalizeMap(ObjectNode metadata) {
@@ -121,7 +106,10 @@ public class ValorantGameEventAdapter implements GameEventAdapter {
 
         metadata.put(
                 "map",
-                ValorantMapMapper.normalize(map));
+                map
+                        .replace("de_", "")
+                        .replace("cs_", "")
+                        .toUpperCase());
     }
 
     @Override
@@ -130,11 +118,13 @@ public class ValorantGameEventAdapter implements GameEventAdapter {
             GameEventDto event,
             JsonNode normalizedEvent) {
 
-        boolean isHeadshot = normalizedEvent.path("headshot").asBoolean(false);
+        boolean isHeadshot =
+                normalizedEvent.path("headshot").asBoolean(false);
 
-        Set<EventType> applicableEvents = resolveEventTypes(
-                event.getEventType(),
-                isHeadshot);
+        Set<EventType> applicableEvents =
+                resolveEventTypes(
+                        event.getEventType(),
+                        isHeadshot);
 
         if (!applicableEvents.contains(progress.getEventType())) {
             return 0;

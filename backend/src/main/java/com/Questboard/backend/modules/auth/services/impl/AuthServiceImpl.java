@@ -1,13 +1,20 @@
 package com.Questboard.backend.modules.auth.services.impl;
 
+import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
+import com.Questboard.backend.modules.auth.dto.response.AuthMeResponse;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.exception.AuthException;
 import com.Questboard.backend.modules.auth.services.AuthService;
 import com.Questboard.backend.modules.auth.strategy.AuthStrategy;
 import com.Questboard.backend.modules.auth.strategy.factory.AuthStrategyFactory;
+import com.Questboard.backend.modules.wallet.dto.WalletStatsDto;
+import com.Questboard.backend.modules.wallet.service.WalletService;
 
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,12 +22,15 @@ import org.springframework.stereotype.Service;
  * Delegates work to provider-specific authentication strategies.
  */
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final AuthStrategyFactory authStrategyFactory;
+    private final WalletService walletService;
 
-    public AuthServiceImpl(AuthStrategyFactory authStrategyFactory) {
+    public AuthServiceImpl(AuthStrategyFactory authStrategyFactory, WalletService walletService) {
         this.authStrategyFactory = authStrategyFactory;
+        this.walletService = walletService;
     }
 
     @Override
@@ -41,5 +51,23 @@ public class AuthServiceImpl implements AuthService {
 
         AuthStrategy strategy = authStrategyFactory.getStrategy(request.authType());
         return strategy.register(request);
+    }
+
+    public AuthMeResponse getCurrentUserInfo(@AuthenticationPrincipal JwtUserPrincipal principal){
+        // log.info("AUTH ME called for userID={}", principal.getUserId());
+        if (principal == null) {
+            return null;
+        }
+        log.info("AUTH ME called for: userId={}", principal.getUserId());
+
+        WalletStatsDto walletStats = walletService.getWalletStats(principal.getUserId());
+
+        return AuthMeResponse.builder()
+                .userId(principal.getUserId())
+                .username(principal.getUsername())
+                .email(principal.getEmail())
+                .role(principal.getRole())
+                .wallet(walletStats)
+                .build();
     }
 }

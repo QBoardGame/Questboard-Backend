@@ -22,7 +22,7 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
                 w.totalCoinsEarned = w.totalCoinsEarned + :amount
             WHERE w.user.id = :userId
             """)
-    int addCoins(UUID userId, Long amount);
+    Long addCoins(UUID userId, Long amount);
 
     @Modifying
     @Query("""

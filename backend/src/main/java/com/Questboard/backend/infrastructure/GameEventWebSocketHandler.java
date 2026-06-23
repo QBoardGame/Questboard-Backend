@@ -1,5 +1,8 @@
 package com.Questboard.backend.infrastructure;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,15 +12,22 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.Questboard.backend.modules.challenges.dto.EventProcessingResult;
+import com.Questboard.backend.modules.challenges.dto.GameEventDto;
+import com.Questboard.backend.modules.challenges.enums.EventType;
+import com.Questboard.backend.modules.challenges.service.GameEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class GameEventWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final GameEventService gameEventService;
 
     // userId (String) -> session
     private final ConcurrentHashMap<String, WebSocketSession> activeSessions = new ConcurrentHashMap<>();
@@ -41,6 +51,7 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
         activeSessions.put(userIdStr, session);
 
         log.info("User connected via WebSocket: userId={}, email={}", userIdStr, email);
+
     }
 
     @Override
@@ -49,6 +60,7 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
             TextMessage message) throws Exception {
 
         String payload = message.getPayload();
+        System.out.println("WebSocket message received: " + payload);
 
         try {
             // -----------------------------
@@ -65,22 +77,32 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
             // -----------------------------
             // Parse event
             // -----------------------------
-            GameEventRequest request = objectMapper.readValue(payload, GameEventRequest.class);
+            WebSocketEnvelope envelope = objectMapper.readValue(payload, WebSocketEnvelope.class);
 
+            GameEventRequest request = envelope.getPayload();
+
+            System.out.println("DESERIALIZED REQUEST = " + request);
             // attach user context
             request.setUserId(userId);
 
             // -----------------------------
             // Process event (your service)
             // -----------------------------
-            // trackingService.processIncomingEvent(request);
 
-            System.out.println("Received event: " + request + " from userId: " + userId);
-            // -----------------------------
-            // ACK response
-            // -----------------------------
-            session.sendMessage(new TextMessage(
-                    "{\"status\":\"ACK\"}"));
+            GameEventDto dto = toDto(request);
+
+            // UUID eventId = gameEventService.submitEvent(
+            // dto,
+            // userId);
+
+            List<EventProcessingResult> results = gameEventService.submitEvent(dto, userId);
+
+            sendToUser(
+                    userId,
+                    objectMapper.writeValueAsString(
+                            Map.of(
+                                    "type", "progress_update",
+                                    "updates", results)));
 
         } catch (Exception e) {
 
@@ -98,19 +120,39 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
 
         Object userIdObj = session.getAttributes().get("userId");
 
-        if (userIdObj != null) {
-            UUID userId = (UUID) userIdObj;
-            activeSessions.remove(userId.toString());
+        if (userIdObj instanceof UUID userId) {
+
+            activeSessions.computeIfPresent(
+                    userId.toString(),
+                    (key, currentSession) -> currentSession.getId().equals(session.getId())
+                            ? null
+                            : currentSession);
         }
 
         log.info("User disconnected: userId={}, status={}",
                 userIdObj, status);
+
+        super.afterConnectionClosed(session, status);
+    }
+
+    public void disconnectUser(UUID userId) {
+
+        WebSocketSession session = activeSessions.get(userId.toString());
+
+        if (session != null && session.isOpen()) {
+            try {
+                session.close(CloseStatus.NORMAL);
+            } catch (IOException e) {
+                log.error("Failed to close websocket for user {}", userId, e);
+            }
+        }
     }
 
     // ----------------------------------
     // Send message to specific user
     // ----------------------------------
     public void sendToUser(UUID userId, String message) {
+        log.info("Sending message to userId={}, => message={}", userId, message);
 
         WebSocketSession session = activeSessions.get(userId.toString());
 
@@ -121,5 +163,26 @@ public class GameEventWebSocketHandler extends TextWebSocketHandler {
                 log.error("Failed to send message to userId={}", userId, e);
             }
         }
+    }
+
+    private GameEventDto toDto(GameEventRequest request) {
+
+        System.out.println("========== REQUEST ==========");
+        System.out.println("gameId     = " + request.getGameId());
+        System.out.println("eventType  = " + request.getEventType());
+        System.out.println("count      = " + request.getCount());
+        System.out.println("metadata   = " + request.getMetadata());
+        System.out.println("=============================");
+
+        return GameEventDto.builder()
+                .gameId(request.getGameId())
+                .eventType(EventType.valueOf(request.getEventType()))
+                .count(request.getCount())
+                .metadata(objectMapper.valueToTree(request.getMetadata()))
+                .value(
+                        request.getCount() == null
+                                ? 1L
+                                : request.getCount().longValue())
+                .build();
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.springframework.http.HttpStatus;
 
 import com.Questboard.backend.common.JwtUtil;
 
@@ -69,6 +70,9 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
             if (!isAccessToken) {
                 log.error("Token is NOT an access token");
+
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+
                 return false;
             }
 
@@ -77,10 +81,11 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             // -----------------------------
             boolean isValid = jwtUtil.isTokenValid(accessToken);
 
-            log.info("isTokenValid: {}", isValid);
-
             if (!isValid) {
                 log.error("Token validation failed");
+
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+
                 return false;
             }
 
@@ -112,7 +117,9 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
         } catch (Exception e) {
 
-            log.error("WebSocket authentication failed", e);
+            log.error("WebSocket authentication failed");
+
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
 
             return false;
         }

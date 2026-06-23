@@ -36,39 +36,57 @@ public class WalletController {
         return ResponseEntity.ok(stats);
     }
 
+    // @GetMapping("/transactions")
+    // public ResponseEntity<WalletTransactionPageResponse> getWalletTransactions(
+    // @AuthenticationPrincipal JwtUserPrincipal principal,
+    // @RequestParam(defaultValue = "0") int page,
+    // @RequestParam(defaultValue = "20") int size) {
+
+    // Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC,
+    // "createdAt"));
+    // var transactions = walletService.getWalletTransactions(principal.getUserId(),
+    // pageable);
+
+    // List<WalletTransactionResponseDto> content = transactions.map(transaction ->
+    // WalletTransactionResponseDto.builder()
+    // .id(transaction.getId())
+    // .referenceId(transaction.getReferenceId())
+    // .currency(transaction.getCurrency())
+    // .type(transaction.getType())
+    // .cashAmount(transaction.getCashAmount())
+    // .coinAmount(transaction.getCoinAmount())
+    // .balanceAfterCoins(transaction.getBalanceAfterCoins())
+    // .description(transaction.getDescription())
+    // .createdAt(transaction.getCreatedAt())
+    // .build())
+    // .getContent();
+
+    // WalletTransactionPageResponse response =
+    // WalletTransactionPageResponse.builder()
+    // .content(content)
+    // .page(transactions.getNumber())
+    // .size(transactions.getSize())
+    // .totalElements(transactions.getTotalElements())
+    // .totalPages(transactions.getTotalPages())
+    // .first(transactions.isFirst())
+    // .last(transactions.isLast())
+    // .numberOfElements(transactions.getNumberOfElements())
+    // .build();
+
+    // return ResponseEntity.ok(response);
+    // }
+
     @GetMapping("/transactions")
     public ResponseEntity<WalletTransactionPageResponse> getWalletTransactions(
             @AuthenticationPrincipal JwtUserPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var transactions = walletService.getWalletTransactions(principal.getUserId(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
 
-        List<WalletTransactionResponseDto> content = transactions.map(transaction -> WalletTransactionResponseDto.builder()
-                .id(transaction.getId())
-                .referenceId(transaction.getReferenceId())
-                .currency(transaction.getCurrency())
-                .type(transaction.getType())
-                .cashAmount(transaction.getCashAmount())
-                .coinAmount(transaction.getCoinAmount())
-                .balanceAfterCoins(transaction.getBalanceAfterCoins())
-                .description(transaction.getDescription())
-                .createdAt(transaction.getCreatedAt())
-                .build())
-                .getContent();
-
-        WalletTransactionPageResponse response = WalletTransactionPageResponse.builder()
-                .content(content)
-                .page(transactions.getNumber())
-                .size(transactions.getSize())
-                .totalElements(transactions.getTotalElements())
-                .totalPages(transactions.getTotalPages())
-                .first(transactions.isFirst())
-                .last(transactions.isLast())
-                .numberOfElements(transactions.getNumberOfElements())
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                walletService.getWalletTransactions(
+                        principal.getUserId(),
+                        pageable));
     }
 }

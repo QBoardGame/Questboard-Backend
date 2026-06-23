@@ -3,6 +3,7 @@ package com.Questboard.backend.modules.challenges.controller;
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.challenges.dto.ChallengeWithProgressDto;
 import com.Questboard.backend.modules.challenges.dto.ParticipationResponse;
+import com.Questboard.backend.modules.challenges.dto.UserChallengeProgressDto;
 import com.Questboard.backend.modules.challenges.service.ChallengeService;
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +25,7 @@ public class ChallengeController {
      * Get active challenges for a game
      */
     @GetMapping("/games/{gameId}")
-    public List<ChallengeWithProgressDto> getChallenges(
+    public List<UserChallengeProgressDto> getChallenges(
             @PathVariable Long gameId,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
 
