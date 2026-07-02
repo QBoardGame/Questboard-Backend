@@ -12,4 +12,5 @@ public interface AuthStrategy {
     AuthResponse authenticate(AuthRequest request);
 
     AuthResponse register(RegisterRequest request);
+    
 }

@@ -4,8 +4,10 @@ import com.Questboard.backend.modules.auth.dto.AuthType;
 import com.Questboard.backend.modules.auth.dto.GoogleUser;
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
+import com.Questboard.backend.modules.auth.dto.request.ForgotPasswordRequest;
 import com.Questboard.backend.modules.auth.dto.request.RefreshTokenRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
+import com.Questboard.backend.modules.auth.dto.request.ResetPasswordRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthMeResponse;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.services.AuthService;
@@ -97,8 +99,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
- 
-
     @GetMapping("/google/start")
     public void startGoogleAuth(
             @RequestParam String redirect,
@@ -118,15 +118,13 @@ public class AuthController {
         response.sendRedirect(url);
     }
 
-   
-
     @GetMapping("/google/callback")
     public void callback(
             @RequestParam String code,
             @RequestParam String state,
             HttpServletResponse response) throws Exception {
 
-        String redirectUri = new String(Base64.getUrlDecoder().decode(state));
+        // String redirectUri = new String(Base64.getUrlDecoder().decode(state));
 
         // 1. Google → user info
         GoogleUser googleUser = googleOAuthService.getUserFromCode(code);
@@ -143,8 +141,27 @@ public class AuthController {
 
         // 4. Redirect back to Overwolf
         response.sendRedirect(
-                redirectUri
+                // redirectUri
+                "overwolf-extension://auth-success"
                         + "?accessToken=" + authResponse.accessToken()
                         + "&refreshToken=" + authResponse.refreshToken());
     }
-} 
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request) {
+
+        authService.sendPasswordResetLink(request.email());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request) {
+
+        authService.resetPassword(request);
+
+        return ResponseEntity.ok().build();
+    }
+}

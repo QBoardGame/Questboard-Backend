@@ -8,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
+import com.Questboard.backend.modules.auth.dto.request.ResetPasswordRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthMeResponse;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 
@@ -21,5 +22,9 @@ public interface AuthService {
     AuthResponse register(RegisterRequest request);
 
     AuthMeResponse getCurrentUserInfo(@AuthenticationPrincipal JwtUserPrincipal authentication);
+
+    void sendPasswordResetLink(String email);
+
+    void resetPassword(ResetPasswordRequest request);
 
 }

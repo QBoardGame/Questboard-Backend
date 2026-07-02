@@ -33,72 +33,6 @@ public class TokenService {
         this.gameEventWebSocketHandler = gameEventWebSocketHandler;
     }
 
-    // public AuthResponse refreshToken(RefreshTokenRequest request) {
-
-    // if (request == null || !StringUtils.hasText(request.refreshToken())) {
-    // throw new AuthException("Refresh token is required");
-    // }
-
-    // String token = request.refreshToken();
-
-    // // 1. Validate JWT signature + expiry
-    // if (!jwtUtil.isTokenValid(token)) {
-    // throw new AuthException("Invalid or expired refresh token");
-    // }
-
-    // // 2. Extract userId
-    // String userId = jwtUtil.extractUserId(token);
-
-    // User user = userRepository.findById(UUID.fromString(userId))
-    // .orElseThrow(() -> new AuthException("User not found"));
-
-    // // 3. Validate token in DB
-    // RefreshToken storedToken = refreshTokenRepository.findByUser(user)
-    // .orElseThrow(() -> new AuthException("Refresh token not found"));
-
-    // if (!storedToken.getToken().equals(token)) {
-    // throw new AuthException("Refresh token mismatch");
-    // }
-
-    // if (storedToken.isRevoked() ||
-    // storedToken.getExpiryDate().isBefore(Instant.now())) {
-    // throw new AuthException("Refresh token expired or revoked");
-    // }
-
-    // // 4. Generate new tokens
-    // String newAccessToken = jwtUtil.generateToken(
-    // user.getId(),
-    // 15,
-    // "access token",
-    // user.getRole().name(),
-    // user.getEmail(),
-    // user.getProvider().name(),
-    // user.getUsername());
-
-    // String newRefreshToken = jwtUtil.generateToken(
-    // user.getId(),
-    // 129600,
-    // "refresh token",
-    // user.getRole().name(),
-    // user.getEmail(),
-    // user.getProvider().name(),
-    // user.getUsername());
-
-    // // 5. Rotate refresh token in DB
-    // storedToken.setToken(newRefreshToken);
-    // storedToken.setExpiryDate(Instant.now().plusSeconds(60L * 60 * 24 * 90));
-    // refreshTokenRepository.save(storedToken);
-
-    // // 6. Return response
-    // return AuthResponse.builder()
-    // .email(user.getEmail())
-    // .provider(user.getProvider().name())
-    // .message("Token refreshed successfully")
-    // .accessToken(newAccessToken)
-    // .refreshToken(newRefreshToken)
-    // .build();
-    // }
-
     public AuthResponse refreshToken(RefreshTokenRequest request) {
 
         if (request == null || !StringUtils.hasText(request.refreshToken())) {
@@ -154,6 +88,15 @@ public class TokenService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
+    }
+
+    public String passwordResetToken(User user){
+        return jwtUtil.generateToken(user.getId(), 15, "password-reset-token", user.getRole().name(),
+                user.getEmail(), user.getProvider().name(), user.getUsername());
+    }
+
+    public UUID validateTokenAndGetUserId(String token){
+        return jwtUtil.isTokenValid(token) ? UUID.fromString(jwtUtil.extractUserId(token)) : null;
     }
 
     public TokenPair createTokens(User user) {

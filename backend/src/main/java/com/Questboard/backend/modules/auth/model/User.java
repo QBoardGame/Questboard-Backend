@@ -65,9 +65,13 @@ public class User {
 
     private Instant deletedAt;
 
+    @Column(nullable = false)
+    private boolean isTermsAndPrivacyPolicyAccepted;
+
     @PrePersist
     protected void onCreate() {
         this.isDeleted = false;
         this.isVerified = false;
+        this.isTermsAndPrivacyPolicyAccepted = true;
     }
 }

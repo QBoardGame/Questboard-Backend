@@ -1,19 +1,23 @@
 package com.Questboard.backend.modules.auth.services.impl;
 
+import com.Questboard.backend.modules.auth.dto.AuthType;
 import com.Questboard.backend.modules.auth.dto.JwtUserPrincipal;
 import com.Questboard.backend.modules.auth.dto.request.AuthRequest;
 import com.Questboard.backend.modules.auth.dto.request.RegisterRequest;
+import com.Questboard.backend.modules.auth.dto.request.ResetPasswordRequest;
 import com.Questboard.backend.modules.auth.dto.response.AuthMeResponse;
 import com.Questboard.backend.modules.auth.dto.response.AuthResponse;
 import com.Questboard.backend.modules.auth.exception.AuthException;
 import com.Questboard.backend.modules.auth.services.AuthService;
 import com.Questboard.backend.modules.auth.strategy.AuthStrategy;
+import com.Questboard.backend.modules.auth.strategy.PasswordResetCapable;
 import com.Questboard.backend.modules.auth.strategy.factory.AuthStrategyFactory;
 import com.Questboard.backend.modules.wallet.dto.WalletStatsDto;
 import com.Questboard.backend.modules.wallet.service.WalletService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.http.auth.AUTH;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
         return strategy.register(request);
     }
 
-    public AuthMeResponse getCurrentUserInfo(@AuthenticationPrincipal JwtUserPrincipal principal){
+    public AuthMeResponse getCurrentUserInfo(@AuthenticationPrincipal JwtUserPrincipal principal) {
         // log.info("AUTH ME called for userID={}", principal.getUserId());
         if (principal == null) {
             return null;
@@ -69,5 +73,25 @@ public class AuthServiceImpl implements AuthService {
                 .role(principal.getRole())
                 .wallet(walletStats)
                 .build();
+    }
+
+    @Override
+    public void sendPasswordResetLink(String email) {
+        getPasswordResetStrategy().sendPasswordResetLink(email);
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        getPasswordResetStrategy().resetPassword(request);
+    }
+
+    private PasswordResetCapable getPasswordResetStrategy() {
+        AuthStrategy strategy = authStrategyFactory.getStrategy(AuthType.EMAIL_PASSWORD);
+
+        if (!(strategy instanceof PasswordResetCapable resetStrategy)) {
+            throw new AuthException("Password reset not supported for this provider");
+        }
+
+        return resetStrategy;
     }
 }
